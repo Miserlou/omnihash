@@ -34,7 +34,8 @@ For strings:
     SHA3_512:              4b65d7b7acc886f9add07db3a5d42bf0032fe0109a1fd56f623c7093e8a59689f9246918a4f388034ddf393231eaba0742b3dc1840e4556270a729ce56098f35
     BLAKE2s:               239dd0a7e138f5fced884939c200b9ed35e092c17cd27f6049a5d0bda9fd7b8b
     BLAKE2b:               84793833af5cf79ef9548fd505dbb6633e54c1b4ec2c4f577c3a0ae41764e50ce8278ab8f6e0edd3e90ab6ef0914ff0e49329e0703ecc2fb7fdac12a4823fea7
-    And files:
+
+And files:
 
     $ omnihash /etc/hosts
     Hashing file /etc/hosts..
