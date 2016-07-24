@@ -1,3 +1,4 @@
 click==6.6
 colorama==0.3.7
-wheel==0.24.0
+pyblake2==0.9.3
+sha3==0.2.1
