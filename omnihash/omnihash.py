@@ -50,19 +50,19 @@ def main(hashmes, s, v):
         # SHA3 Family
         s = sha3.SHA3224()
         s.update(hashme_data)
-        echo('SHA3_224', str(s.hexdigest()))
+        echo('SHA3_224', s.hexdigest().decode("utf-8"))
 
         s = sha3.SHA3256()
         s.update(hashme_data)
-        echo('SHA3_256', str(s.hexdigest()))
+        echo('SHA3_256', s.hexdigest().decode("utf-8"))
 
         s = sha3.SHA3384()
         s.update(hashme_data)
-        echo('SHA3_384', str(s.hexdigest()))
+        echo('SHA3_384', s.hexdigest().decode("utf-8"))
 
         s = sha3.SHA3512()
         s.update(hashme_data)
-        echo('SHA3_512', str(s.hexdigest()))
+        echo('SHA3_512', s.hexdigest().decode("utf-8"))
 
         # BLAKE
         b = blake2s()
