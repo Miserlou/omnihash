@@ -42,13 +42,13 @@ def test_omnihash2():
 
 def test_omnihashfile():
     runner = CliRunner()
-    result = runner.invoke(main, ['hashme', '/etc/hosts'])
+    result = runner.invoke(main, ['hashme', 'README.md'])
     assert result.exit_code == 0
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
 
 def test_omnihashs():
     runner = CliRunner()
-    result = runner.invoke(main, ['hashme', '/etc/hosts', '-s'])
+    result = runner.invoke(main, ['hashme', 'README.md', '-s'])
     assert result.exit_code == 0
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
 
