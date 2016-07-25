@@ -62,4 +62,6 @@ And files:
     BLAKE2s:               e84408c7fac52f8436c4f3ba5e4e2abd038e4735a343de471f7c1dc548cd6ddf
     BLAKE2b:               2c23f27128614351712d3e2851c9c24763499512117ceb55b3f277863880767a11272ec5abe5527a9ae08cdea367264aa31b9160da148c00f732806200076954
 
-MIT license.
+You can also pass multiple inputs and force string-hashing with `-s`.
+
+MIT license, 2016.
