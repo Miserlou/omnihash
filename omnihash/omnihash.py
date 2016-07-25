@@ -29,9 +29,10 @@ def main(hashmes, s, v):
             click.echo("Hashing file %s.." % hashme)
             with open(hashme, mode='rb') as f:
                 hashme_data = f.read()
+                hashme_data = hashme.encode('utf-8')
         else:
             click.echo("Hashing string '%s'.." % hashme)
-            hashme_data = hashme
+            hashme_data = hashme.encode('utf-8')
 
         # Default Algos
         done = []
@@ -65,11 +66,11 @@ def main(hashmes, s, v):
 
         # BLAKE
         b = blake2s()
-        b.update(hashme_data.encode('utf-8'))
+        b.update(hashme_data)
         echo('BLAKE2s', b.hexdigest())
         
         b = blake2b()
-        b.update(hashme_data.encode('utf-8'))
+        b.update(hashme_data)
         echo('BLAKE2b', b.hexdigest())
 
 def echo(algo, digest):
