@@ -11,11 +11,18 @@ from pyblake2 import blake2b, blake2s
 @click.command()
 @click.argument('hashmes', nargs=-1)
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
-def main(hashmes, s):
+@click.option('-v', is_flag=True, default=False, help="Show version and quit.")
+def main(hashmes, s, v):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
     """
+
+    if v:
+        import pkg_resources
+        version = pkg_resources.require("omnihash")[0].version
+        click.echo(version)
+        return
 
     for hashme in hashmes:
         if os.path.exists(hashme) and not s:
