@@ -1,6 +1,8 @@
-# omnihash [![Build Status](https://travis-ci.org/Miserlou/omnihash.svg)](https://travis-ci.org/Miserlou/omnihash) [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash)
+# omnihash [![Build Status](https://travis-ci.org/Miserlou/omnihash.svg)](https://travis-ci.org/Miserlou/omnihash) [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/)
 
-Tiny little tool to hash strings and files using various common hashing algorithms.
+A tiny little tool to hash strings and files using various common hashing algorithms.
+
+This is useful during reverse engineering when you know that _something_ is being hashed, but you don't know what or how. It's kind of like the opposite of a [hash identifier](https://github.com/psypanda/hashID).
 
 ## Installation
 
@@ -62,6 +64,80 @@ And files:
     BLAKE2s:               e84408c7fac52f8436c4f3ba5e4e2abd038e4735a343de471f7c1dc548cd6ddf
     BLAKE2b:               2c23f27128614351712d3e2851c9c24763499512117ceb55b3f277863880767a11272ec5abe5527a9ae08cdea367264aa31b9160da148c00f732806200076954
 
-You can also pass multiple inputs and force string-hashing with `-s`.
+## Advanced usage
+
+You can pass multiple inputs and force string-hashing with `-s`.
+
+You can also see the value for various CRC checks by using `-c`:
+
+    # omnihash  "correct horse battery staple" -c
+    Hashing string 'correct horse battery staple'..
+    DSA:                   abf7aad6438836dbe526aa231abde2d0eef74d42
+    DSA-SHA:               abf7aad6438836dbe526aa231abde2d0eef74d42
+    MD4:                   131adffe1d8712c1b624ba62b5bcf3fd
+    MD5:                   9cc2ae8a1ba7a93da39b46fc1019c481
+    MDC2:                  b41edfd5e9cb278433a4a5c740898ffb
+    RIPEMD160:             5e708aa85ae8b0d080837c50bd63634d584edc00
+    SHA:                   99add446c4eed3772a92fabe3ab2c56fc2c9a26e
+    SHA1:                  abf7aad6438836dbe526aa231abde2d0eef74d42
+    SHA224:                636f080709f287ec5c5ea79442fc4bb914924cd5c6ca8ff84e3410c4
+    SHA256:                c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a
+    SHA384:                c24b92449c871f33bbbf1fc1989e5e1037cfa9a3dfdb17947f8172226181e7825ebb4c750763915835bf125a590e05ae
+    SHA512:                be5ef7679d88ab9a9045f6267e55f5e5784b4b8cd764b5cd855a5244f91c626953cd46c43d7668873fd6efbd3b221249315580031963472a078781fe046e62ae
+    dsaEncryption:         abf7aad6438836dbe526aa231abde2d0eef74d42
+    dsaWithSHA:            abf7aad6438836dbe526aa231abde2d0eef74d42
+    ecdsa-with-SHA1:       abf7aad6438836dbe526aa231abde2d0eef74d42
+    whirlpool:             8c0e81ff1650da90c70a859319ba923b8807ad26af0940f8562fd62e75878eed13f434ba47860223ac55d92d91a169b3f9a1cbd4f10f3fca1b877088e5675891
+    SHA3_224:              5ee454bfad2d1e25ba74884af244379d17bf50ef46dbe644e7587fc8
+    SHA3_256:              af9ac3dac56b02f1ea017e7657a9bb7e1778274e31509f134f023e41a5953866
+    SHA3_384:              5a1caac1441d4d002d6650f558b6bb10593095fe4664496b8f1665f239d923e69f95cbd141c5dcf833770542ff2322e8
+    SHA3_512:              4b65d7b7acc886f9add07db3a5d42bf0032fe0109a1fd56f623c7093e8a59689f9246918a4f388034ddf393231eaba0742b3dc1840e4556270a729ce56098f35
+    BLAKE2s:               239dd0a7e138f5fced884939c200b9ed35e092c17cd27f6049a5d0bda9fd7b8b
+    BLAKE2b:               84793833af5cf79ef9548fd505dbb6633e54c1b4ec2c4f577c3a0ae41764e50ce8278ab8f6e0edd3e90ab6ef0914ff0e49329e0703ecc2fb7fdac12a4823fea7
+    CRC-16:                0x72bc
+    CRC-16-BUYPASS:        0xed6e
+    CRC-16-DDS-110:        0x929c
+    CRC-16-DECT:           0x73e5
+    CRC-16-DNP:            0xfd30
+    CRC-16-EN-13757:       0x2ae7
+    CRC-16-GENIBUS:        0x493a
+    CRC-16-MAXIM:          0x8d43
+    CRC-16-MCRF4XX:        0xdbf8
+    CRC-16-RIELLO:         0xb464
+    CRC-16-T10-DIF:        0x2510
+    CRC-16-TELEDISK:       0xdd3d
+    CRC-16-USB:            0x67eb
+    CRC-24:                0xbe455f
+    CRC-24-FLEXRAY-A:      0xad0a8a
+    CRC-24-FLEXRAY-B:      0x5d6e72
+    CRC-32:                0xcb7e6e10L
+    CRC-32-BZIP2:          0x8f6407fL
+    CRC-32C:               0xbd9d695aL
+    CRC-32D:               0xd42e1822L
+    CRC-32-MPEG:           0xf709bf80L
+    CRC-32Q:               0xafc633bfL
+    CRC-64:                0x98aa19c00b783c4L
+    CRC-64-JONES:          0xc1c681b1fee4d316L
+    CRC-64-WE:             0x41097f04e906dfecL
+    CRC-8:                 0xb9
+    CRC-8-DARC:            0xe1
+    CRC-8-I-CODE:          0x99
+    CRC-8-ITU:             0xec
+    CRC-8-MAXIM:           0xec
+    CRC-8-ROHC:            0x31
+    CRC-8-WCDMA:           0xd6
+    CRC-AUG-CCITT:         0x301f
+    CRC-CCITT-FALSE:       0xb6c5
+    JAMCRC:                0x348191efL
+    KERMIT:                0x22cd
+    MODBUS:                0x9814
+    POSIX:                 0x60e7b181L
+    X-25:                  0x2407
+    XFER:                  0x8648a5a9L
+    XMODEM:                0x1a5a
+
+More information can be found with `--help`.
+
+### License
 
 MIT license, 2016.

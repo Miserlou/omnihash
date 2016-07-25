@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import click
+import crcmod.predefined
 import hashlib
 import os
 import sha3
+import zlib
 
 from pyblake2 import blake2b, blake2s
 
@@ -12,7 +14,8 @@ from pyblake2 import blake2b, blake2s
 @click.argument('hashmes', nargs=-1)
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
-def main(hashmes, s, v):
+@click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
+def main(hashmes, s, v, c):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -72,6 +75,14 @@ def main(hashmes, s, v):
         b = blake2b()
         b.update(hashme_data)
         echo('BLAKE2b', b.hexdigest())
+
+        # CRC
+        if c:
+            for name in sorted(crcmod.predefined._crc_definitions_by_name):
+                crc_name = crcmod.predefined._crc_definitions_by_name[name]['name']
+                crc_func = crcmod.predefined.mkCrcFun(crc_name)
+                echo(crc_name.upper(), hex(crc_func(hashme_data)))
+
 
 def echo(algo, digest):
     click.echo('%-*s%s' % (32, click.style(algo, fg='green') + ':', digest))

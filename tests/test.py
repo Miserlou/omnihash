@@ -31,6 +31,7 @@ def test_hello_world():
 def test_omnihash():
     runner = CliRunner()
     result = runner.invoke(main, ['hashme'])
+    print(result.output)
     assert result.exit_code == 0
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
 
@@ -51,6 +52,13 @@ def test_omnihashs():
     result = runner.invoke(main, ['hashme', 'README.md', '-s'])
     assert result.exit_code == 0
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
+
+def test_omnihashcrc():
+    runner = CliRunner()
+    result = runner.invoke(main, ['hashme', 'README.md', '-c'])
+    assert result.exit_code == 0
+    assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
+    assert '5d20a7c38be78000L' in result.output
 
 if __name__ == '__main__':
     unittest.main()
