@@ -1,4 +1,4 @@
-# omnihash
+# omnihash [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash)
 
 Tiny little tool to hash strings and files using various common hashing algorithms.
 
