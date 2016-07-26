@@ -55,8 +55,9 @@ def test_omnihashs():
 
 def test_omnihashcrc():
     runner = CliRunner()
-    result = runner.invoke(main, ['hashme', 'README.md', '-c'])
+    result = runner.invoke(main, ['hashme', 'README.md', '-sc'])
     assert result.exit_code == 0
+    print(result.output)
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
     assert '5d20a7c38be78000L' in result.output
 
