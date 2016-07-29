@@ -2,4 +2,6 @@ click==6.6
 colorama==0.3.7
 crcmod==1.7
 pyblake2==0.9.3
+requests==2.10.0
 sha3==0.2.1
+validators==0.10.3

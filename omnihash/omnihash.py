@@ -5,7 +5,9 @@ import click
 import crcmod.predefined
 import hashlib
 import os
+import requests
 import sha3
+import validators
 import zlib
 
 from pyblake2 import blake2b, blake2s
@@ -21,6 +23,7 @@ def main(hashmes, s, v, c):
     Elif hashme is a string, omnihash that.
     """
 
+    # Print version and quit
     if v:
         import pkg_resources
         version = pkg_resources.require("omnihash")[0].version
@@ -28,7 +31,22 @@ def main(hashmes, s, v, c):
         return
 
     for hashme in hashmes:
-        if os.path.exists(hashme) and not s:
+        # URL
+        if not s and validators.url(hashme):
+            click.echo("Hashing content of URL '%s'.." % hashme)
+            try:
+                response = requests.get(hashme)
+            except requests.exceptions.ConnectionError as e:
+                print ("Not a valid URL. :(")
+                continue
+            except Exception as e:
+                print ("Not a valid URL. %s" % e)
+                continue                
+            if response.status_code != 200:
+                click.echo("Response returned %s. :(" % response.status_code)
+                continue
+            hashme_data = response.content
+        elif os.path.exists(hashme) and not s:
             click.echo("Hashing file %s.." % hashme)
             with open(hashme, mode='rb') as f:
                 hashme_data = f.read()
@@ -51,30 +69,30 @@ def main(hashmes, s, v, c):
             done.append(algo)
 
         # SHA3 Family
-        s = sha3.SHA3224()
-        s.update(hashme_data)
-        echo('SHA3_224', s.hexdigest().decode("utf-8"))
+        sha = sha3.SHA3224()
+        sha.update(hashme_data)
+        echo('SHA3_224', sha.hexdigest().decode("utf-8"))
 
-        s = sha3.SHA3256()
-        s.update(hashme_data)
-        echo('SHA3_256', s.hexdigest().decode("utf-8"))
+        sha = sha3.SHA3256()
+        sha.update(hashme_data)
+        echo('SHA3_256', sha.hexdigest().decode("utf-8"))
 
-        s = sha3.SHA3384()
-        s.update(hashme_data)
-        echo('SHA3_384', s.hexdigest().decode("utf-8"))
+        sha = sha3.SHA3384()
+        sha.update(hashme_data)
+        echo('SHA3_384', sha.hexdigest().decode("utf-8"))
 
-        s = sha3.SHA3512()
-        s.update(hashme_data)
-        echo('SHA3_512', s.hexdigest().decode("utf-8"))
+        sha = sha3.SHA3512()
+        sha.update(hashme_data)
+        echo('SHA3_512', sha.hexdigest().decode("utf-8"))
 
         # BLAKE
-        b = blake2s()
-        b.update(hashme_data)
-        echo('BLAKE2s', b.hexdigest())
+        blake = blake2s()
+        blake.update(hashme_data)
+        echo('BLAKE2s', blake.hexdigest())
         
-        b = blake2b()
-        b.update(hashme_data)
-        echo('BLAKE2b', b.hexdigest())
+        blake = blake2b()
+        blake.update(hashme_data)
+        echo('BLAKE2b', blake.hexdigest())
 
         # CRC
         if c:

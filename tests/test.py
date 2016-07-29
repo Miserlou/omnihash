@@ -61,5 +61,19 @@ def test_omnihashcrc():
     assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
     assert '5d20a7c38be78000' in result.output
 
+def test_url():
+    runner = CliRunner()
+    result = runner.invoke(main, ['hashme', 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png', '-c'])
+    assert result.exit_code == 0
+    print(result.output)
+    assert '26f471f6ebe3b11557506f6ae96156e0a3852e5b' in result.output
+    assert '809089' in result.output
+    
+    result = runner.invoke(main, ['hashme', 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png', '-sc'])
+    assert result.exit_code == 0
+    print(result.output)
+    assert 'b61bad1cb3dfad6258bef11b12361effebe597a8c80131cd2d6d07fce2206243' in result.output
+    assert '20d9c2bbdbaf669b' in result.output
+
 if __name__ == '__main__':
     unittest.main()
