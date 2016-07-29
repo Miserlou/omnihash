@@ -94,7 +94,9 @@ And URLs:
 
 ## Advanced usage
 
-You can pass multiple inputs and force string-hashing with `-s`.
+You can pass multiple inputs at any time. 
+
+You can force string-hashing with `-s`.
 
 You can also see the value for various CRC checks by using `-c`:
 
