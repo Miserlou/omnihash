@@ -1,6 +1,6 @@
 # omnihash [![Build Status](https://travis-ci.org/Miserlou/omnihash.svg)](https://travis-ci.org/Miserlou/omnihash) [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/)
 
-A tiny little tool to hash strings and files using various common hashing algorithms.
+A tiny little tool to hash strings, files and network resources using various common hashing algorithms.
 
 This is useful during reverse engineering when you know that _something_ is being hashed, but you don't know what or how. It's kind of like the opposite of a [hash identifier](https://github.com/psypanda/hashID).
 
@@ -63,6 +63,34 @@ And files:
     SHA3_512:              8158c2f4a2aab1e0abe63ec83711fe3343531f6683c89e5ff539cf8d29eb7bce931443646cd2704a9f1b901436741cc28d230bc58c5e98ed42b676fc15bfa354
     BLAKE2s:               e84408c7fac52f8436c4f3ba5e4e2abd038e4735a343de471f7c1dc548cd6ddf
     BLAKE2b:               2c23f27128614351712d3e2851c9c24763499512117ceb55b3f277863880767a11272ec5abe5527a9ae08cdea367264aa31b9160da148c00f732806200076954
+
+And URLs:
+
+    $ omnihash https://cryptome.org
+    Hashing content of URL 'https://cryptome.org'..
+    DSA:                   f63c8212d4769f2740306d30df6e56e4d773c412
+    DSA-SHA:               f63c8212d4769f2740306d30df6e56e4d773c412
+    MD4:                   2a61fd067f31bc161545e7e6eb08e31f
+    MD5:                   12d4aca3c58007350edae822301d7d83
+    MDC2:                  fe7acaffad747aa9ab644bd37314b916
+    RIPEMD160:             1e7b92befcd56f70b90f7a6b5d6b3e8b8c56a3f9
+    SHA:                   124876e226334bfadaf71c00e60f2e77551b140a
+    SHA1:                  f63c8212d4769f2740306d30df6e56e4d773c412
+    SHA224:                5af71e96da3d3383ddff0fa308bd7714f91af5873f17f7fa944aa5c0
+    SHA256:                c320ec6af2dc3c1129e238e3d06653cbe6f01d5c791763db4b9dcabe169debc6
+    SHA384:                0cf01cf20737f91c9736c924ab4cd2c503bfbb055ed630b5fa80d94b598e26a2376c739c4d195e464e2259c0cb4f6313
+    SHA512:                c978e3544a6d4b11ed180463e6916ac562d3c90c007a107205e2f61118e2f3d032caf2053bd4ee0ab5c4a287279d0294dec4663ab2e3ed90e3e7312c2ae69abc
+    dsaEncryption:         f63c8212d4769f2740306d30df6e56e4d773c412
+    dsaWithSHA:            f63c8212d4769f2740306d30df6e56e4d773c412
+    ecdsa-with-SHA1:       f63c8212d4769f2740306d30df6e56e4d773c412
+    whirlpool:             c12d0362a5c30aa8848db7e6fd3f13d8bd5094201a89389c0ab24793dbee6733834d03362f6a960816abd450a900c016797996ac46e50af38bb02681054f30e7
+    SHA3_224:              7bdb6efdc640a25a30dbbf51cc7f22e17f6c1963d871f89506292b35
+    SHA3_256:              31cb08dadd163c309e7a551e7a8104ea5f935c1933c0e9a4005ee26809958766
+    SHA3_384:              c2257da2c3352c4165acbd3ada334eb0034c0ee514da8609823eb537bd089d8ddde2ef63eead0867208f8c5d10f866b3
+    SHA3_512:              bd36ece65851c5238882d3861343c980f58888cc0057a6ac808e20ef28ce2e8970d1123c88360c13064f3dbd332a10369df6b4be9483a9b8860b9d2156dd3e65
+    BLAKE2s:               f4b0dd61772776ba04a4f0c94975a92acc41eb61ac2745e60b3adb7a08dc88d4
+    BLAKE2b:               c1635df205326331b565959edb4b3b64a81a352ec594c869d35a2373ee8f1b8288e9135c0627b6cc44d54378a4b1f1fb39e124065644b7b9a62f57dd0e16e8ab2c23f27128614351712d3e2851c9c24763499512117ceb55b3f277863880767a11272ec5abe5527a9ae08cdea367264aa31b9160da148c00f732806200076954
+
 
 ## Advanced usage
 
