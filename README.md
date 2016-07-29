@@ -100,7 +100,7 @@ You can force string-hashing with `-s`.
 
 You can also see the value for various CRC checks by using `-c`:
 
-    # omnihash  "correct horse battery staple" -c
+    $ omnihash  "correct horse battery staple" -c
     Hashing string 'correct horse battery staple'..
     DSA:                   abf7aad6438836dbe526aa231abde2d0eef74d42
     DSA-SHA:               abf7aad6438836dbe526aa231abde2d0eef74d42
