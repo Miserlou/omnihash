@@ -45,7 +45,7 @@ def test_omnihashfile():
     runner = CliRunner()
     result = runner.invoke(main, ['hashme', 'README.md'])
     assert result.exit_code == 0
-    assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
+    assert '5b49b13d041e743939f54c53a1d1528a46721e48' in result.output
 
 def test_omnihashs():
     runner = CliRunner()
