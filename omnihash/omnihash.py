@@ -46,11 +46,13 @@ def main(hashmes, s, v, c):
                 click.echo("Response returned %s. :(" % response.status_code)
                 continue
             hashme_data = response.content
+        # File
         elif os.path.exists(hashme) and not s:
             click.echo("Hashing file %s.." % hashme)
             with open(hashme, mode='rb') as f:
                 hashme_data = f.read()
-                hashme_data = hashme.encode('utf-8')
+                hashme_data = hashme_data.encode('utf-8')
+        # String
         else:
             click.echo("Hashing string '%s'.." % hashme)
             hashme_data = hashme.encode('utf-8')
