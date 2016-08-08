@@ -7,6 +7,7 @@ import hashlib
 import os
 import requests
 import sha3
+import sys
 import validators
 import zlib
 
@@ -51,7 +52,8 @@ def main(hashmes, s, v, c):
             click.echo("Hashing file %s.." % hashme)
             with open(hashme, mode='rb') as f:
                 hashme_data = f.read()
-                hashme_data = hashme_data.encode('utf-8')
+                if sys.version_info < (3,0):
+                    hashme_data = hashme_data.encode('utf-8')
         # String
         else:
             click.echo("Hashing string '%s'.." % hashme)
