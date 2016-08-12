@@ -42,6 +42,7 @@ setup(
     entry_points={
         'console_scripts': [
             'omnihash = omnihash.omnihash:main',
+            'oh = omnihash.omnihash:main',
         ]
     },
     classifiers=[

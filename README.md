@@ -98,6 +98,8 @@ You can also hash items from the standard input like so:
 
     $ cat my_large_file.bin | omnihash
 
+It's aliased so you can actually just call `oh` if you're as lazy as I am.
+
 You can pass multiple inputs at any time. 
 
 You can force string-hashing with `-s`.
