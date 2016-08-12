@@ -43,15 +43,15 @@ def test_omnihash2():
 
 def test_omnihashfile():
     runner = CliRunner()
-    result = runner.invoke(main, ['hashme', 'README.md'])
+    result = runner.invoke(main, ['hashme', 'LICENSE'])
     assert result.exit_code == 0
-    assert '5b49b13d041e743939f54c53a1d1528a46721e48' in result.output
+    assert '941c986ff0f3e90543dc5e2a0687ee99b19bff67' in result.output
 
 def test_omnihashs():
     runner = CliRunner()
-    result = runner.invoke(main, ['hashme', 'README.md', '-s'])
+    result = runner.invoke(main, ['hashme', 'LICENSE', '-s'])
     assert result.exit_code == 0
-    assert 'fb78992e561929a6967d5328f49413fa99048d06' in result.output
+    assert '0398ccd0f49298b10a3d76a47800d2ebecd49859' in result.output
 
 def test_omnihashcrc():
     runner = CliRunner()
