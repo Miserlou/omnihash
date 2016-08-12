@@ -6,7 +6,6 @@ import setuptools
 
 import omnihash
 
-
 # To support 2/3 installation
 setup_version = int(setuptools.__version__.split('.')[0])
 if setup_version < 18:
@@ -22,7 +21,8 @@ except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
-    required = f.read().splitlines()
+    required = [l for l in f.read().splitlines()  # Exclude extras.
+                if not any(r in l for r in ('pyblake2', 'sha3'))]
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
@@ -43,7 +43,15 @@ setup(
         'console_scripts': [
             'omnihash = omnihash.omnihash:main',
             'oh = omnihash.omnihash:main',
-        ]
+        ],
+        'omnihash.plugins': [
+            'a_sha3 = omnihash.omnihash:plugin_sha3_digesters [sha3]',
+            'b_pyblake2 = omnihash.omnihash:plugin_pyblake2_digesters [pyblake2]',
+        ],
+    },
+    extras_require={
+        'sha3': ['sha3'],
+        'pyblake2': ['pyblake2'],
     },
     classifiers=[
         'Environment :: Console',

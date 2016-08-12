@@ -3,26 +3,57 @@
 
 # Standard Imports
 from collections import OrderedDict
-import functools as fnt
 import hashlib
 import io
 import itertools as itt
 import os
+import pkg_resources
 import sys
 
-# 3rd Party 
+# 3rd Party imports
 import click
 import requests
 import validators
 
 # Algos
 import crcmod.predefined as crcmod
-from pyblake2 import blake2b, blake2s
-import sha3
+
+
+PLUGIN_GROUP_NAME = 'omnihash.plugins'
+
+known_digesters = OrderedDict()
+""" Plugins add here 2-tuples (digester-factory-func, final-hashing-func). """
+
+
+def _init_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
+    entry_points = pkg_resources.working_set.iter_entry_points(plugin_group_name)
+    for ep in sorted(entry_points, key=lambda ep: ep.name):
+        try:
+            plugin_loader = ep.load()
+            if callable(plugin_loader):
+                plugin_loader()
+        except Exception as ex:
+            click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
+                      ep, ep.dist, ex), err=1)
+
+# Plugin algos
+def plugin_sha3_digesters(include_CRCs=False):
+    import sha3  # @UnresolvedImport
+
+    known_digesters['SHA3_224'] = (sha3.SHA3224(), lambda d: d.hexdigest().decode("utf-8"))
+    known_digesters['SHA3_256'] = (sha3.SHA3256(), lambda d: d.hexdigest().decode("utf-8"))
+    known_digesters['SHA3_384'] = (sha3.SHA3384(), lambda d: d.hexdigest().decode("utf-8"))
+    known_digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
+
+def plugin_pyblake2_digesters(include_CRCs=False):
+    import pyblake2  # @UnresolvedImport
+
+    known_digesters['BLAKE2s'] = (pyblake2.blake2s(), lambda d: d.hexdigest())
+    known_digesters['BLAKE2b'] = (pyblake2.blake2b(), lambda d: d.hexdigest())
 
 
 class FileIter(object):
-    """An iterator for file-descriptor that auto-closes when exhausted."""
+    """An iterator that chunks in bytes a file-descriptor, auto-closing it when exhausted."""
     def __init__(self, fd):
         self._fd = fd
         self._iter = iter(lambda: fd.read(io.DEFAULT_BUFFER_SIZE), b'')
@@ -55,6 +86,8 @@ def main(hashmes, s, v, c):
         version = pkg_resources.require("omnihash")[0].version
         click.echo(version)
         return
+
+    _init_plugins()
 
     if not hashmes:
         digesters = make_digesters(c)
@@ -111,20 +144,12 @@ def make_digesters(include_CRCs=False):
 
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
-
         # algorithms_available can have duplicates
         if algo.upper() not in digesters:
             digesters[algo.upper()] = (hashlib.new(algo), lambda d: d.hexdigest())
 
-    # SHA3 Family
-    digesters['SHA3_224'] = (sha3.SHA3224(), lambda d: d.hexdigest().decode("utf-8"))
-    digesters['SHA3_256'] = (sha3.SHA3256(), lambda d: d.hexdigest().decode("utf-8"))
-    digesters['SHA3_384'] = (sha3.SHA3384(), lambda d: d.hexdigest().decode("utf-8"))
-    digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
-
-    # BLAKE
-    digesters['BLAKE2s'] = (blake2s(), lambda d: d.hexdigest())
-    digesters['BLAKE2b'] = (blake2b(), lambda d: d.hexdigest())
+    ## Append plugin digesters.
+    digesters.update(known_digesters)
 
     # CRC
     if include_CRCs:
@@ -134,6 +159,7 @@ def make_digesters(include_CRCs=False):
                                            lambda d: hex(d.crcValue))
 
     return digesters
+
 
 def produce_hashes(bytechunks, digesters):
     """
