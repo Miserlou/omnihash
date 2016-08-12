@@ -34,7 +34,7 @@ setup(
     install_requires=required,
     include_package_data=True,
     license='MIT License',
-    description='Hash files and strings in various common algorithms',
+    description='Hash files, strings, input streams and network resources in various common algorithms simultaneously',
     long_description=README,
     url='https://github.com/Miserlou/omnihash',
     author='Rich Jones',
