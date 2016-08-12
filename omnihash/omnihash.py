@@ -1,17 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from collections import OrderedDict
+import hashlib
+import io
+import os
+import sys
 
 import click
-import crcmod.predefined
-import hashlib
-import os
 import requests
-import sha3
-import sys
 import validators
-import zlib
 
+import crcmod.predefined as crcmod
+import functools as fnt
+import itertools as itt
 from pyblake2 import blake2b, blake2s
+import sha3
+
+
+class FileIter(object):
+    """An iterator for file-descriptor that auto-closes when exhausted."""
+    def __init__(self, fd):
+        self._fd = fd
+        self._iter = iter(lambda: fd.read(io.DEFAULT_BUFFER_SIZE), b'')
+
+    def __iter__(self):
+        return self._iter
+
+    def next(self):
+        try:
+            return self._iter.next()
+        except StopIteration:
+            self._fd.close()
+            raise
+
 
 @click.command()
 @click.argument('hashmes', nargs=-1)
@@ -31,83 +52,86 @@ def main(hashmes, s, v, c):
         click.echo(version)
         return
 
-    for hashme in hashmes:
-        # URL
-        if not s and validators.url(hashme):
-            click.echo("Hashing content of URL '%s'.." % hashme)
-            try:
-                response = requests.get(hashme)
-            except requests.exceptions.ConnectionError as e:
-                print ("Not a valid URL. :(")
-                continue
-            except Exception as e:
-                print ("Not a valid URL. %s" % e)
-                continue                
-            if response.status_code != 200:
-                click.echo("Response returned %s. :(" % response.status_code)
-                continue
-            hashme_data = response.content
-        # File
-        elif os.path.exists(hashme) and not s:
-            click.echo("Hashing file %s.." % hashme)
-            with open(hashme, mode='rb') as f:
-                hashme_data = f.read()
-                if sys.version_info < (3,0):
-                    hashme_data = hashme_data.encode('utf-8')
-        # String
-        else:
-            click.echo("Hashing string '%s'.." % hashme)
-            hashme_data = hashme.encode('utf-8')
+    if not hashmes:
+        digesters = make_digesters(c)
+        bytechunks = iter(lambda: sys.stdin.buffer.read(io.DEFAULT_BUFFER_SIZE), b'')
+        produce_hashes(bytechunks, digesters)
+    else:
+        for hashme in hashmes:
+            digesters = make_digesters(c)
+            bytechunks = iterate_bytechunks(hashme, s)
+            produce_hashes(bytechunks, digesters)
 
-        # Default Algos
-        done = []
-        for algo in sorted(hashlib.algorithms_available):
 
-            # algorithms_available can have duplicates
-            if algo.upper() in done:
-                continue
-                
-            h = hashlib.new(algo)
-            h.update(hashme_data)
-            echo(algo, h.hexdigest())
-            done.append(algo)
+def iterate_bytechunks(hashme, is_string):
+    # URL
+    if not is_string and validators.url(hashme):
+        click.echo("Hashing content of URL '%r'..." % hashme)
+        try:
+            response = requests.get(hashme)
+        except requests.exceptions.ConnectionError as e:
+            raise ValueError("Not a valid URL %r. :(")
+        except Exception as e:
+            raise ValueError("Not a valid URL. %r" % e)
+        if response.status_code != 200:
+            click.echo("Response returned %s. :(" % response.status_code, err=True)
+        bytechunks = response.iter_content()
+    # File
+    elif os.path.exists(hashme) and not is_string:
+        click.echo("Hashing file %r..." % hashme)
+        bytechunks = FileIter(open(hashme, mode='rb'))
+    # String
+    else:
+        click.echo("Hashing string %r..." % hashme)
+        bytechunks = (hashme.encode('utf-8'), )
 
-        # SHA3 Family
-        sha = sha3.SHA3224()
-        sha.update(hashme_data)
-        echo('SHA3_224', sha.hexdigest().decode("utf-8"))
+    return bytechunks
 
-        sha = sha3.SHA3256()
-        sha.update(hashme_data)
-        echo('SHA3_256', sha.hexdigest().decode("utf-8"))
 
-        sha = sha3.SHA3384()
-        sha.update(hashme_data)
-        echo('SHA3_384', sha.hexdigest().decode("utf-8"))
+def make_digesters(include_CRCs):
+    digesters = OrderedDict()
 
-        sha = sha3.SHA3512()
-        sha.update(hashme_data)
-        echo('SHA3_512', sha.hexdigest().decode("utf-8"))
+    # Default Algos
+    for algo in sorted(hashlib.algorithms_available):
 
-        # BLAKE
-        blake = blake2s()
-        blake.update(hashme_data)
-        echo('BLAKE2s', blake.hexdigest())
-        
-        blake = blake2b()
-        blake.update(hashme_data)
-        echo('BLAKE2b', blake.hexdigest())
+        # algorithms_available can have duplicates
+        if algo.upper() not in digesters:
+            digesters[algo.upper()] = (hashlib.new(algo), lambda d: d.hexdigest())
 
-        # CRC
-        if c:
-            for name in sorted(crcmod.predefined._crc_definitions_by_name):
-                crc_name = crcmod.predefined._crc_definitions_by_name[name]['name']
-                crc_func = crcmod.predefined.mkCrcFun(crc_name)
-                echo(crc_name.upper(), hex(crc_func(hashme_data)))
+    # SHA3 Family
+    digesters['SHA3_224'] = (sha3.SHA3224(), lambda d: d.hexdigest().decode("utf-8"))
+    digesters['SHA3_256'] = (sha3.SHA3256(), lambda d: d.hexdigest().decode("utf-8"))
+    digesters['SHA3_384'] = (sha3.SHA3384(), lambda d: d.hexdigest().decode("utf-8"))
+    digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
+
+    # BLAKE
+    digesters['BLAKE2s'] = (blake2s(), lambda d: d.hexdigest())
+    digesters['BLAKE2b'] = (blake2b(), lambda d: d.hexdigest())
+
+    # CRC
+    if include_CRCs:
+        for name in sorted(crcmod._crc_definitions_by_name):
+            crc_name = crcmod._crc_definitions_by_name[name]['name']
+            digesters[crc_name.upper()] = (crcmod.PredefinedCrc(crc_name),
+                                           lambda d: hex(d.crcValue))
+
+    return digesters
+
+def produce_hashes(bytechunks, digesters):
+    # Produce hashes
+    streams = itt.tee(bytechunks, len(digesters))
+    batch = zip(streams, digesters.items())
+    for stream, (algo, (digester, hashfunc)) in batch:
+        for b in stream:
+            digester.update(b)
+        echo(algo, hashfunc(digester))
 
 
 def echo(algo, digest):
-    click.echo('%-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
+    click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except ValueError as ex:
+        echo(ex, err=True)

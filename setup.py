@@ -1,9 +1,11 @@
 import os
-import setuptools
-import omnihash 
 import sys
 
 from setuptools import setup
+import setuptools
+
+import omnihash
+
 
 # To support 2/3 installation
 setup_version = int(setuptools.__version__.split('.')[0])
@@ -15,7 +17,7 @@ if setup_version < 18:
 # Set external files
 try:
     from pypandoc import convert
-    README = convert('README.md', 'rst')	 
+    README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
@@ -54,4 +56,5 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
+    tests_require=['nose'],
 )
