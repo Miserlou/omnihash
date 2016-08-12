@@ -43,7 +43,8 @@ class FileIter(object):
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
-def main(hashmes, s, v, c):
+@click.pass_context
+def main(click_context, hashmes, s, v, c):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -63,11 +64,12 @@ def main(hashmes, s, v, c):
         else:
             bytechunks = iter(lambda: sys.stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
 
+        # If no stdin, just help and quit.
         if not sys.stdin.isatty():
             click.echo("Hashing standard input..")
             produce_hashes(bytechunks, digesters)
         else:
-            click.echo("You need to give omnihash some input!")
+            print(click_context.get_help())
             return
     else:
         for hashme in hashmes:
