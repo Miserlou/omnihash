@@ -1,3 +1,5 @@
+![omnihash!](http://i.imgur.com/IAAI2ll.png)
+
 # omnihash [![Build Status](https://travis-ci.org/Miserlou/omnihash.svg)](https://travis-ci.org/Miserlou/omnihash) [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/)
 
 A tiny little tool to hash strings, files, input streams and network resources using various common hashing algorithms.
