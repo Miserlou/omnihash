@@ -58,10 +58,8 @@ def main(hashmes, s, v, c):
 
     if not hashmes:
         digesters = make_digesters(c)
-        if hasattr(sys.stdin, 'buffer'):
-            bytechunks = iter(lambda: sys.stdin.buffer.read(io.DEFAULT_BUFFER_SIZE), b'')
-        else:
-            bytechunks = iter(lambda: sys.stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
+        stdin = click.get_binary_stream()
+        bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
 
         if not sys.stdin.isatty():
             click.echo("Hashing standard input..")
