@@ -66,6 +66,9 @@ def main(hashmes, s, v, c):
         if not sys.stdin.isatty():
             click.echo("Hashing standard input..")
             produce_hashes(bytechunks, digesters)
+        else:
+            click.echo("You need to give omnihash some input!")
+            return
     else:
         for hashme in hashmes:
             digesters = make_digesters(c)
