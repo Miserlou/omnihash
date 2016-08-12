@@ -1,6 +1,6 @@
 # omnihash [![Build Status](https://travis-ci.org/Miserlou/omnihash.svg)](https://travis-ci.org/Miserlou/omnihash) [![PyPI](https://img.shields.io/pypi/v/omnihash.svg)](https://pypi.python.org/pypi/omnihash) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/omnihash/)
 
-A tiny little tool to hash strings, files and network resources using various common hashing algorithms.
+A tiny little tool to hash strings, files, streams and network resources using various common hashing algorithms.
 
 This is useful during reverse engineering when you know that _something_ is being hashed, but you don't know what or how. It's kind of like the opposite of a [hash identifier](https://github.com/psypanda/hashID).
 
@@ -95,6 +95,10 @@ And URLs:
 ## Advanced usage
 
 You can pass multiple inputs at any time. 
+
+You can also hash items from the standard input like so:
+
+    $ cat my_large_file.bin | omnihash
 
 You can force string-hashing with `-s`.
 

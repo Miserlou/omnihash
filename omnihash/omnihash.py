@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# Standard Imports
 from collections import OrderedDict
+import functools as fnt
 import hashlib
 import io
+import itertools as itt
 import os
 import sys
 
+# 3rd Party 
 import click
 import requests
 import validators
 
+# Algos
 import crcmod.predefined as crcmod
-import functools as fnt
-import itertools as itt
 from pyblake2 import blake2b, blake2s
 import sha3
 
@@ -53,8 +57,12 @@ def main(hashmes, s, v, c):
         return
 
     if not hashmes:
+        click.echo("Hashing standard input..")
         digesters = make_digesters(c)
-        bytechunks = iter(lambda: sys.stdin.buffer.read(io.DEFAULT_BUFFER_SIZE), b'')
+        if hasattr(sys.stdin, 'buffer'):
+            bytechunks = iter(lambda: sys.stdin.buffer.read(io.DEFAULT_BUFFER_SIZE), b'')
+        else:
+            bytechunks = iter(lambda: sys.stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
         produce_hashes(bytechunks, digesters)
     else:
         for hashme in hashmes:
@@ -63,32 +71,39 @@ def main(hashmes, s, v, c):
             produce_hashes(bytechunks, digesters)
 
 
-def iterate_bytechunks(hashme, is_string):
+def iterate_bytechunks(hashme, is_string=True):
+    """
+    Prep our bytes.
+    """
+
     # URL
     if not is_string and validators.url(hashme):
-        click.echo("Hashing content of URL '%r'..." % hashme)
+        click.echo("Hashing content of URL '{}'..".format(hashme))
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
-            raise ValueError("Not a valid URL %r. :(")
+            raise ValueError("Not a valid URL. :(")
         except Exception as e:
-            raise ValueError("Not a valid URL. %r" % e)
+            raise ValueError("Not a valid URL. {}.".format(e))
         if response.status_code != 200:
             click.echo("Response returned %s. :(" % response.status_code, err=True)
         bytechunks = response.iter_content()
     # File
     elif os.path.exists(hashme) and not is_string:
-        click.echo("Hashing file %r..." % hashme)
+        click.echo("Hashing file {}..".format(hashme))
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
-        click.echo("Hashing string %r..." % hashme)
+        click.echo("Hashing string '{}'..".format(hashme))
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
 
 
-def make_digesters(include_CRCs):
+def make_digesters(include_CRCs=False):
+    """
+    Create and return a dictionary of all our active hash algorithms.
+    """
     digesters = OrderedDict()
 
     # Default Algos
@@ -118,6 +133,10 @@ def make_digesters(include_CRCs):
     return digesters
 
 def produce_hashes(bytechunks, digesters):
+    """
+    Given our bytes and our algorithms, calculate and print our hashes.
+    """
+
     # Produce hashes
     streams = itt.tee(bytechunks, len(digesters))
     batch = zip(streams, digesters.items())
@@ -125,7 +144,6 @@ def produce_hashes(bytechunks, digesters):
         for b in stream:
             digester.update(b)
         echo(algo, hashfunc(digester))
-
 
 def echo(algo, digest):
     click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
