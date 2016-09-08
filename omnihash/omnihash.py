@@ -91,12 +91,11 @@ def main(click_context, hashmes, s, v, c):
     _init_plugins()
 
     if not hashmes:
-        digesters = make_digesters(c)
-        stdin = click.get_binary_stream()
-        bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
-
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
+            digesters = make_digesters(c)
+            stdin = click.get_binary_stream('stdin')
+            bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             click.echo("Hashing standard input..")
             produce_hashes(bytechunks, digesters)
         else:

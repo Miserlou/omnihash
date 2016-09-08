@@ -28,6 +28,12 @@ def test_hello_world():
     assert result.output == 'Hello Peter!\n'
 
 # Main
+def test_empty():
+    runner = CliRunner()
+    result = runner.invoke(main)
+    print(result.output)
+    assert result.exit_code == 0
+
 def test_omnihash():
     runner = CliRunner()
     result = runner.invoke(main, ['hashme'])
