@@ -9,12 +9,15 @@ but you don't know what or how. It's kind of like the opposite of a [hash identi
 
 ## Installation
 
-Install with all extras (`sha3` & `pyblake2`):
+To install omnihash, simply:
 
-    pip install omnihash[*]
+    pip install omnihash
 
-Note that on *Windows*, those two libraries do not yet exist (as of Aug 2016),
-so don't specify any extras.
+To install with the SHA3 and Blake2 algorithm plugins:
+
+    pip install omnihash[sha3,pyblake2] 
+
+Please note that on *Windows*, those two libraries do not yet exist (as of Aug 2016).
 
 ## Usage
 
@@ -108,7 +111,7 @@ You can also hash items from the standard input like so:
 
 It's aliased so you can actually just call `oh` if you're as lazy as I am.
 
-You can pass multiple inputs at any time.
+You can pass multiple inputs at any time (ex, `omnihash *`).
 
 You can force string-hashing with `-s`.
 
