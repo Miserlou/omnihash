@@ -105,7 +105,8 @@ def main(click_context, hashmes, s, v, c):
         for hashme in hashmes:
             digesters = make_digesters(c)
             bytechunks = iterate_bytechunks(hashme, s)
-            produce_hashes(bytechunks, digesters)
+            if bytechunks:
+                produce_hashes(bytechunks, digesters)
 
 
 def iterate_bytechunks(hashme, is_string=True):
@@ -115,7 +116,7 @@ def iterate_bytechunks(hashme, is_string=True):
 
     # URL
     if not is_string and validators.url(hashme):
-        click.echo("Hashing content of URL '{}'..".format(hashme))
+        click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..")
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -127,11 +128,15 @@ def iterate_bytechunks(hashme, is_string=True):
         bytechunks = response.iter_content()
     # File
     elif os.path.exists(hashme) and not is_string:
-        click.echo("Hashing file {}..".format(hashme))
+        if os.path.isdir(hashme):
+            click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..")
+            return None
+
+        click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..")
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
-        click.echo("Hashing string '{}'..".format(hashme))
+        click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..")
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
