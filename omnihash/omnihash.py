@@ -74,8 +74,9 @@ class FileIter(object):
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
+@click.option('-m', is_flag=False, default=False, help="Match input string.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c):
+def main(click_context, hashmes, s, v, c, m):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -96,8 +97,8 @@ def main(click_context, hashmes, s, v, c):
             digesters = make_digesters(c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
-            click.echo("Hashing standard input..")
-            produce_hashes(bytechunks, digesters)
+            click.echo("Hashing " + click.style("standard input", bold=True) + "..")
+            produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
             return
@@ -106,7 +107,7 @@ def main(click_context, hashmes, s, v, c):
             digesters = make_digesters(c)
             bytechunks = iterate_bytechunks(hashme, s)
             if bytechunks:
-                produce_hashes(bytechunks, digesters)
+                produce_hashes(bytechunks, digesters, match=m)
 
 
 def iterate_bytechunks(hashme, is_string=True):
@@ -167,7 +168,7 @@ def make_digesters(include_CRCs=False):
     return digesters
 
 
-def produce_hashes(bytechunks, digesters):
+def produce_hashes(bytechunks, digesters, match):
     """
     Given our bytes and our algorithms, calculate and print our hashes.
     """
@@ -175,10 +176,23 @@ def produce_hashes(bytechunks, digesters):
     # Produce hashes
     streams = itt.tee(bytechunks, len(digesters))
     batch = zip(streams, digesters.items())
+
+    match_found = False
     for stream, (algo, (digester, hashfunc)) in batch:
         for b in stream:
             digester.update(b)
-        echo(algo, hashfunc(digester))
+
+        result = hashfunc(digester)
+        if match:
+            if match in result:
+                echo(algo, result)
+                match_found = True
+        else:
+            echo(algo, result)
+
+    if match:
+        if not match_found:
+            click.echo(click.style("No matches", fg='red') + " found!")
 
 def echo(algo, digest):
     click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))

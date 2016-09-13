@@ -109,6 +109,12 @@ You can also hash items from the standard input like so:
 
     $ cat my_large_file.bin | omnihash
 
+You can filter for string matches using `-m`, like so:
+
+    $ omnihash "correct horse battery staple" -m 9cc2
+    Hashing string correct horse battery staple..
+    MD5:                   9cc2ae8a1ba7a93da39b46fc1019c481
+
 It's aliased so you can actually just call `oh` if you're as lazy as I am.
 
 You can pass multiple inputs at any time (ex, `omnihash *`).
