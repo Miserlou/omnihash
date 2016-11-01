@@ -74,12 +74,19 @@ def test_url():
     print(result.output)
     assert '26f471f6ebe3b11557506f6ae96156e0a3852e5b' in result.output
     assert '809089' in result.output
-    
+
     result = runner.invoke(main, ['hashme', 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png', '-sc'])
     assert result.exit_code == 0
     print(result.output)
     assert 'b61bad1cb3dfad6258bef11b12361effebe597a8c80131cd2d6d07fce2206243' in result.output
     assert '20d9c2bbdbaf669b' in result.output
+
+def test_json():
+    runner = CliRunner()
+    result = runner.invoke(main, ["correct horse battery staple", "-j", "-m", "9cc2" ])
+    assert result.exit_code == 0
+    print(result.output)
+    assert '"MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"' in result.output
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,7 +15,7 @@ To install omnihash, simply:
 
 To install with the SHA3 and Blake2 algorithm plugins:
 
-    pip install omnihash[sha3,pyblake2] 
+    pip install omnihash[sha3,pyblake2]
 
 Please note that on *Windows*, those two libraries do not yet exist (as of Aug 2016).
 
@@ -114,6 +114,13 @@ You can filter for string matches using `-m`, like so:
     $ omnihash "correct horse battery staple" -m 9cc2
     Hashing string correct horse battery staple..
     MD5:                   9cc2ae8a1ba7a93da39b46fc1019c481
+
+You can output in machine readable JSON with `-j`, like so:
+
+    $ omnihash "correct horse battery staple" -j -m 9cc2
+    {
+        "MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"
+    }
 
 It's aliased so you can actually just call `oh` if you're as lazy as I am.
 

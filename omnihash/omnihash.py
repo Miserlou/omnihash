@@ -6,6 +6,7 @@ from collections import OrderedDict
 import hashlib
 import io
 import itertools as itt
+import json
 import os
 import pkg_resources
 import sys
@@ -25,7 +26,7 @@ known_digesters = OrderedDict()
 """ Plugins add here 2-tuples (digester-factory-func, final-hashing-func). """
 
 
-def _init_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
+def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
     entry_points = pkg_resources.working_set.iter_entry_points(plugin_group_name)
     for ep in sorted(entry_points, key=lambda ep: ep.name):
         try:
@@ -75,8 +76,9 @@ class FileIter(object):
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
 @click.option('-m', is_flag=False, default=False, help="Match input string.")
+@click.option('-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c, m):
+def main(click_context, hashmes, s, v, c, m, j):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -89,35 +91,40 @@ def main(click_context, hashmes, s, v, c, m):
         click.echo(version)
         return
 
-    _init_plugins()
+    intialize_plugins()
 
+    results = None
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
             digesters = make_digesters(c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
-            click.echo("Hashing " + click.style("standard input", bold=True) + "..")
-            produce_hashes(bytechunks, digesters, match=m)
+            if not j:
+                click.echo("Hashing " + click.style("standard input", bold=True) + "..")
+            results = produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
             return
     else:
         for hashme in hashmes:
             digesters = make_digesters(c)
-            bytechunks = iterate_bytechunks(hashme, s)
+            bytechunks = iterate_bytechunks(hashme, s, j)
             if bytechunks:
-                produce_hashes(bytechunks, digesters, match=m)
+                results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
+    if results and j:
+        print json.dumps(results, indent=4, sort_keys=True)
 
-def iterate_bytechunks(hashme, is_string=True):
+def iterate_bytechunks(hashme, is_string=True, use_json=False):
     """
     Prep our bytes.
     """
 
     # URL
     if not is_string and validators.url(hashme):
-        click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..")
+        if not use_json:
+            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..")
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -130,14 +137,17 @@ def iterate_bytechunks(hashme, is_string=True):
     # File
     elif os.path.exists(hashme) and not is_string:
         if os.path.isdir(hashme):
-            click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..")
+            if not use_json:
+                click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..")
             return None
 
-        click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..")
+        if not use_json:
+            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..")
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
-        click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..")
+        if not use_json:
+            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..")
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
@@ -168,7 +178,7 @@ def make_digesters(include_CRCs=False):
     return digesters
 
 
-def produce_hashes(bytechunks, digesters, match):
+def produce_hashes(bytechunks, digesters, match, use_json=False):
     """
     Given our bytes and our algorithms, calculate and print our hashes.
     """
@@ -176,6 +186,7 @@ def produce_hashes(bytechunks, digesters, match):
     # Produce hashes
     streams = itt.tee(bytechunks, len(digesters))
     batch = zip(streams, digesters.items())
+    results = {}
 
     match_found = False
     for stream, (algo, (digester, hashfunc)) in batch:
@@ -185,17 +196,23 @@ def produce_hashes(bytechunks, digesters, match):
         result = hashfunc(digester)
         if match:
             if match in result:
-                echo(algo, result)
+                echo(algo, result, use_json)
+                results[algo] = result
                 match_found = True
         else:
-            echo(algo, result)
+            results[algo] = result
+            echo(algo, result, use_json)
 
     if match:
         if not match_found:
-            click.echo(click.style("No matches", fg='red') + " found!")
+            if not use_json:
+                click.echo(click.style("No matches", fg='red') + " found!")
 
-def echo(algo, digest):
-    click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
+    return results
+
+def echo(algo, digest, json=False):
+    if not json:
+        click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
 
 if __name__ == '__main__':
     try:
