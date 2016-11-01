@@ -114,7 +114,7 @@ def main(click_context, hashmes, s, v, c, m, j):
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
     if results and j:
-        print json.dumps(results, indent=4, sort_keys=True)
+        print(json.dumps(results, indent=4, sort_keys=True))
 
 def iterate_bytechunks(hashme, is_string=True, use_json=False):
     """
