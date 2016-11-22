@@ -177,9 +177,6 @@ def make_digesters(families, include_CRCs=False):
         if aname not in digesters and is_algo_in_families(aname, families):
             digesters[aname] = (hashlib.new(algo), lambda d: d.hexdigest())
 
-    ## Append plugin digesters.
-    digesters.update(known_digesters)
-
     # CRC
     if include_CRCs:
         for name in sorted(crcmod._crc_definitions_by_name):
@@ -189,8 +186,13 @@ def make_digesters(families, include_CRCs=False):
                 digesters[aname] = (crcmod.PredefinedCrc(crc_name),
                                                lambda d: hex(d.crcValue))
 
-    return digesters
+    ## Append plugin digesters.
+    digesters.update(known_digesters)
+    for digester in digesters.keys():
+        if not is_algo_in_families(digester.upper(), families):
+            digesters.pop(digester, None)
 
+    return digesters
 
 def produce_hashes(bytechunks, digesters, match, use_json=False):
     """
