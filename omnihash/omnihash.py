@@ -158,7 +158,7 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     return bytechunks
 
 
-def _is_algo_in_families(algo_name, families):
+def is_algo_in_families(algo_name, families):
     """:param algo_name: make sure it is UPPER"""
     return not families or any(f in algo_name for f in families)
 
@@ -174,7 +174,7 @@ def make_digesters(families, include_CRCs=False):
     for algo in sorted(hashlib.algorithms_available):
         # algorithms_available can have duplicates
         aname = algo.upper()
-        if aname not in digesters and _is_algo_in_families(aname, families):
+        if aname not in digesters and is_algo_in_families(aname, families):
             digesters[aname] = (hashlib.new(algo), lambda d: d.hexdigest())
 
     ## Append plugin digesters.
@@ -185,7 +185,7 @@ def make_digesters(families, include_CRCs=False):
         for name in sorted(crcmod._crc_definitions_by_name):
             crc_name = crcmod._crc_definitions_by_name[name]['name']
             aname = crc_name.upper()
-            if _is_algo_in_families(aname, families):
+            if is_algo_in_families(aname, families):
                 digesters[aname] = (crcmod.PredefinedCrc(crc_name),
                                                lambda d: hex(d.crcValue))
 
