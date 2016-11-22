@@ -35,7 +35,8 @@ def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
                 plugin_loader()
         except Exception as ex:
             click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
-                      ep, ep.dist, ex), err=1)
+                       ep, ep.dist, ex), err=1)
+
 
 # Plugin algos
 def plugin_sha3_digesters(include_CRCs=False):
@@ -45,6 +46,7 @@ def plugin_sha3_digesters(include_CRCs=False):
     known_digesters['SHA3_256'] = (sha3.SHA3256(), lambda d: d.hexdigest().decode("utf-8"))
     known_digesters['SHA3_384'] = (sha3.SHA3384(), lambda d: d.hexdigest().decode("utf-8"))
     known_digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
+
 
 def plugin_pyblake2_digesters(include_CRCs=False):
     import pyblake2  # @UnresolvedImport
@@ -75,10 +77,13 @@ class FileIter(object):
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
+@click.option('-f', is_flag=False, default=False, multiple=True,
+              help="Select one or more family of algorithms: "
+              "include only algos having TEXT (ci) in their names.")
 @click.option('-m', is_flag=False, default=False, help="Match input string.")
 @click.option('-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c, m, j):
+def main(click_context, hashmes, s, v, c, f, m, j):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -86,7 +91,6 @@ def main(click_context, hashmes, s, v, c, m, j):
 
     # Print version and quit
     if v:
-        import pkg_resources
         version = pkg_resources.require("omnihash")[0].version
         click.echo(version)
         return
@@ -97,24 +101,25 @@ def main(click_context, hashmes, s, v, c, m, j):
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
-            digesters = make_digesters(c)
+            digesters = make_digesters(f, c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
-                click.echo("Hashing " + click.style("standard input", bold=True) + "..")
+                click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
             results = produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
             return
     else:
         for hashme in hashmes:
-            digesters = make_digesters(c)
+            digesters = make_digesters(f, c)
             bytechunks = iterate_bytechunks(hashme, s, j)
             if bytechunks:
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
+
 
 def iterate_bytechunks(hashme, is_string=True, use_json=False):
     """
@@ -124,7 +129,7 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     # URL
     if not is_string and validators.url(hashme):
         if not use_json:
-            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -138,32 +143,39 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     elif os.path.exists(hashme) and not is_string:
         if os.path.isdir(hashme):
             if not use_json:
-                click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..")
+                click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..", err=True)
             return None
 
         if not use_json:
-            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
-            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
 
 
-def make_digesters(include_CRCs=False):
+def _is_algo_in_families(algo_name, families):
+    """:param algo_name: make sure it is UPPER"""
+    return not families or any(f in algo_name for f in families)
+
+
+def make_digesters(families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
     """
+    families = set(f.upper() for f in families)
     digesters = OrderedDict()
 
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
         # algorithms_available can have duplicates
-        if algo.upper() not in digesters:
-            digesters[algo.upper()] = (hashlib.new(algo), lambda d: d.hexdigest())
+        aname = algo.upper()
+        if aname not in digesters and _is_algo_in_families(aname, families):
+            digesters[aname] = (hashlib.new(algo), lambda d: d.hexdigest())
 
     ## Append plugin digesters.
     digesters.update(known_digesters)
@@ -172,8 +184,10 @@ def make_digesters(include_CRCs=False):
     if include_CRCs:
         for name in sorted(crcmod._crc_definitions_by_name):
             crc_name = crcmod._crc_definitions_by_name[name]['name']
-            digesters[crc_name.upper()] = (crcmod.PredefinedCrc(crc_name),
-                                           lambda d: hex(d.crcValue))
+            aname = crc_name.upper()
+            if _is_algo_in_families(aname, families):
+                digesters[aname] = (crcmod.PredefinedCrc(crc_name),
+                                               lambda d: hex(d.crcValue))
 
     return digesters
 
@@ -206,9 +220,10 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
     if match:
         if not match_found:
             if not use_json:
-                click.echo(click.style("No matches", fg='red') + " found!")
+                click.echo(click.style("No matches", fg='red') + " found!", err=True)
 
     return results
+
 
 def echo(algo, digest, json=False):
     if not json:
