@@ -102,7 +102,7 @@ def main(click_context, hashmes, s, v, c, m, j):
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
-                click.echo("Hashing " + click.style("standard input", bold=True) + "..")
+                click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
             results = produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
@@ -126,7 +126,7 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     # URL
     if not is_string and validators.url(hashme):
         if not use_json:
-            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -140,16 +140,16 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     elif os.path.exists(hashme) and not is_string:
         if os.path.isdir(hashme):
             if not use_json:
-                click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..")
+                click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..", err=True)
             return None
 
         if not use_json:
-            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
-            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..")
+            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..", err=True)
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
@@ -208,7 +208,7 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
     if match:
         if not match_found:
             if not use_json:
-                click.echo(click.style("No matches", fg='red') + " found!")
+                click.echo(click.style("No matches", fg='red') + " found!", err=True)
 
     return results
 
