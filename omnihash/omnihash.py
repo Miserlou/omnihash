@@ -35,7 +35,8 @@ def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
                 plugin_loader()
         except Exception as ex:
             click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
-                      ep, ep.dist, ex), err=1)
+                       ep, ep.dist, ex), err=1)
+
 
 # Plugin algos
 def plugin_sha3_digesters(include_CRCs=False):
@@ -45,6 +46,7 @@ def plugin_sha3_digesters(include_CRCs=False):
     known_digesters['SHA3_256'] = (sha3.SHA3256(), lambda d: d.hexdigest().decode("utf-8"))
     known_digesters['SHA3_384'] = (sha3.SHA3384(), lambda d: d.hexdigest().decode("utf-8"))
     known_digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
+
 
 def plugin_pyblake2_digesters(include_CRCs=False):
     import pyblake2  # @UnresolvedImport
@@ -86,7 +88,6 @@ def main(click_context, hashmes, s, v, c, m, j):
 
     # Print version and quit
     if v:
-        import pkg_resources
         version = pkg_resources.require("omnihash")[0].version
         click.echo(version)
         return
@@ -115,6 +116,7 @@ def main(click_context, hashmes, s, v, c, m, j):
 
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
+
 
 def iterate_bytechunks(hashme, is_string=True, use_json=False):
     """
@@ -209,6 +211,7 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
                 click.echo(click.style("No matches", fg='red') + " found!")
 
     return results
+
 
 def echo(algo, digest, json=False):
     if not json:
