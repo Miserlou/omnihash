@@ -109,6 +109,17 @@ You can also hash items from the standard input like so:
 
     $ cat my_large_file.bin | omnihash
 
+You can pass multiple inputs at any time (ex, `omnihash *`).
+
+You can force string-hashing (not falling-back to files) with `-s`.
+
+You may limit the number of algorithms using the `-f` (*"family"*) option:
+
+    $ oh Hi -f sha2 -f sha5
+    SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
+    SHA256:                3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8
+    SHA512:                45ca55ccaa72b98b86c697fdf73fd364d4815a586f76cd326f1785bb816ff7f1f88b46fb8448b19356ee788eb7d300b9392709a289428070b5810d9b5c2d440d
+
 You can filter for string matches using `-m`, like so:
 
     $ omnihash "correct horse battery staple" -m 9cc2
@@ -123,10 +134,6 @@ You can output in machine readable JSON with `-j`, like so:
     }
 
 It's aliased so you can actually just call `oh` if you're as lazy as I am.
-
-You can pass multiple inputs at any time (ex, `omnihash *`).
-
-You can force string-hashing with `-s`.
 
 You can also see the value for various CRC checks by using `-c`:
 

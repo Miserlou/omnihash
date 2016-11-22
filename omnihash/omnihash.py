@@ -77,10 +77,13 @@ class FileIter(object):
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
+@click.option('-f', is_flag=False, default=False, multiple=True,
+              help="Select one or more family of algorithms: "
+              "include only algos having TEXT (ci) in their names.")
 @click.option('-m', is_flag=False, default=False, help="Match input string.")
 @click.option('-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c, m, j):
+def main(click_context, hashmes, s, v, c, f, m, j):
     """
     If there is a file at hashme, read and omnihash that file.
     Elif hashme is a string, omnihash that.
@@ -98,7 +101,7 @@ def main(click_context, hashmes, s, v, c, m, j):
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
-            digesters = make_digesters(c)
+            digesters = make_digesters(f, c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
@@ -109,7 +112,7 @@ def main(click_context, hashmes, s, v, c, m, j):
             return
     else:
         for hashme in hashmes:
-            digesters = make_digesters(c)
+            digesters = make_digesters(f, c)
             bytechunks = iterate_bytechunks(hashme, s, j)
             if bytechunks:
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
@@ -155,17 +158,24 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     return bytechunks
 
 
-def make_digesters(include_CRCs=False):
+def _is_algo_in_families(algo_name, families):
+    """:param algo_name: make sure it is UPPER"""
+    return not families or any(f in algo_name for f in families)
+
+
+def make_digesters(families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
     """
+    families = set(f.upper() for f in families)
     digesters = OrderedDict()
 
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
         # algorithms_available can have duplicates
-        if algo.upper() not in digesters:
-            digesters[algo.upper()] = (hashlib.new(algo), lambda d: d.hexdigest())
+        aname = algo.upper()
+        if aname not in digesters and _is_algo_in_families(aname, families):
+            digesters[aname] = (hashlib.new(algo), lambda d: d.hexdigest())
 
     ## Append plugin digesters.
     digesters.update(known_digesters)
@@ -174,8 +184,10 @@ def make_digesters(include_CRCs=False):
     if include_CRCs:
         for name in sorted(crcmod._crc_definitions_by_name):
             crc_name = crcmod._crc_definitions_by_name[name]['name']
-            digesters[crc_name.upper()] = (crcmod.PredefinedCrc(crc_name),
-                                           lambda d: hex(d.crcValue))
+            aname = crc_name.upper()
+            if _is_algo_in_families(aname, families):
+                digesters[aname] = (crcmod.PredefinedCrc(crc_name),
+                                               lambda d: hex(d.crcValue))
 
     return digesters
 

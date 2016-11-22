@@ -48,6 +48,29 @@ def test_omnihashfile():
     assert '941c986ff0f3e90543dc5e2a0687ee99b19bff67' in result.output
 
 
+def test_omnihashf():
+    runner = CliRunner()
+    result = runner.invoke(main, 'Hi -f sha2 -f SHA5'.split())
+    assert result.exit_code == 0
+    out = """
+  SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
+  SHA256:                3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8
+  SHA512:                45ca55ccaa72b98b86c697fdf73fd364d4815a586f76cd326f1785bb816ff7f1f88b46fb8448b19356ee788eb7d300\
+b9392709a289428070b5810d9b5c2d440d
+"""
+    assert result.output.endswith(out)
+
+    result = runner.invoke(main, 'Hi -c -f sha2 -c -f ITU'.split())
+    assert result.exit_code == 0
+    out = """
+  SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
+  SHA256:                3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8
+  CRC-8-ITU:             0xbe
+"""
+    print(out)
+    assert result.output.endswith(out)
+
+
 def test_omnihashs():
     runner = CliRunner()
     result = runner.invoke(main, ['hashme', 'LICENSE', '-s'])
