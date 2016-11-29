@@ -105,15 +105,16 @@ def main(click_context, hashmes, s, v, c, f, m, j):
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
-                click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
+                click.echo("Hashing " + click.style("standard input", bold=True) + "...", err=True)
             results = produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
             return
     else:
+        hash_many = len(hashmes) > 1
         for hashme in hashmes:
             digesters = make_digesters(f, c)
-            bytechunks = iterate_bytechunks(hashme, s, j)
+            bytechunks = iterate_bytechunks(hashme, s, j, hash_many)
             if bytechunks:
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
@@ -121,7 +122,7 @@ def main(click_context, hashmes, s, v, c, f, m, j):
         print(json.dumps(results, indent=4, sort_keys=True))
 
 
-def iterate_bytechunks(hashme, is_string=True, use_json=False):
+def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     """
     Prep our bytes.
     """
@@ -129,7 +130,7 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     # URL
     if not is_string and validators.url(hashme):
         if not use_json:
-            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing content of URL " + click.style(hashme, bold=True) + "...", err=not hash_many)
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -147,12 +148,12 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
             return None
 
         if not use_json:
-            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing file " + click.style(hashme, bold=True) + "...", err=not hash_many)
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
-            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing string " + click.style(hashme, bold=True) + "...", err=not hash_many)
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
