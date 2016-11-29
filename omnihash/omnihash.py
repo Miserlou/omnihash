@@ -19,6 +19,9 @@ import validators
 # Algos
 import crcmod.predefined as crcmod
 
+##
+# Plugins
+##
 
 PLUGIN_GROUP_NAME = 'omnihash.plugins'
 
@@ -37,7 +40,6 @@ def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
             click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
                        ep, ep.dist, ex), err=1)
 
-
 # Plugin algos
 def plugin_sha3_digesters(include_CRCs=False):
     import sha3  # @UnresolvedImport
@@ -54,6 +56,9 @@ def plugin_pyblake2_digesters(include_CRCs=False):
     known_digesters['BLAKE2s'] = (pyblake2.blake2s(), lambda d: d.hexdigest())
     known_digesters['BLAKE2b'] = (pyblake2.blake2b(), lambda d: d.hexdigest())
 
+##
+# Classes
+##
 
 class FileIter(object):
     """An iterator that chunks in bytes a file-descriptor, auto-closing it when exhausted."""
@@ -71,6 +76,18 @@ class FileIter(object):
             self._fd.close()
             raise
 
+class LenDigester:
+    length = 0
+
+    def update(self, b):
+        self.length += len(b)
+
+    def digest(self):
+        return str(self.length)
+
+##
+# CLI
+##
 
 @click.command()
 @click.argument('hashmes', nargs=-1)
@@ -105,7 +122,7 @@ def main(click_context, hashmes, s, v, c, f, m, j):
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
-                click.echo("Hashing " + click.style("standard input", bold=True) + "...", err=True)
+                click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
             results = produce_hashes(bytechunks, digesters, match=m)
         else:
             print(click_context.get_help())
@@ -121,6 +138,9 @@ def main(click_context, hashmes, s, v, c, f, m, j):
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
 
+##
+# Main Logic
+##
 
 def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     """
@@ -130,7 +150,7 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     # URL
     if not is_string and validators.url(hashme):
         if not use_json:
-            click.echo("Hashing content of URL " + click.style(hashme, bold=True) + "...", err=not hash_many)
+            click.echo("Hashing content of URL " + click.style(hashme, bold=True) + "..", err=not hash_many)
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -148,36 +168,21 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
             return None
 
         if not use_json:
-            click.echo("Hashing file " + click.style(hashme, bold=True) + "...", err=not hash_many)
+            click.echo("Hashing file " + click.style(hashme, bold=True) + "..", err=not hash_many)
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
-            click.echo("Hashing string " + click.style(hashme, bold=True) + "...", err=not hash_many)
+            click.echo("Hashing string " + click.style(hashme, bold=True) + "..", err=not hash_many)
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
 
 
-def is_algo_in_families(algo_name, families):
-    """:param algo_name: make sure it is UPPER"""
-    return not families or any(f in algo_name for f in families)
-
-
-class LenDigester:
-    length = 0
-    
-    def update(self, b):
-        self.length += len(b)
-        
-    def digest(self):
-        return str(self.length)
-
-
 def make_digesters(families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
-    
+
     Each digester is a 2-tuple ``( digester.update_func(bytes), digest_func(digester) -> int)``.
     """
     ## TODO: simplify digester-tuple API, ie: (digester, update_func(d), digest_func(d))
@@ -186,7 +191,7 @@ def make_digesters(families, include_CRCs=False):
     digesters = OrderedDict()
 
     digesters['LENGTH'] = (LenDigester(), LenDigester.digest)
-    
+
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
         # algorithms_available can have duplicates
@@ -244,10 +249,22 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
 
     return results
 
+##
+# Util
+##
+
+def is_algo_in_families(algo_name, families):
+    """:param algo_name: make sure it is UPPER"""
+    return not families or any(f in algo_name for f in families)
+
 
 def echo(algo, digest, json=False):
     if not json:
         click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
+
+##
+# Entrypoint
+##
 
 if __name__ == '__main__':
     try:
