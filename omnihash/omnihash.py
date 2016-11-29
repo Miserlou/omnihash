@@ -188,7 +188,7 @@ def make_digesters(families, include_CRCs=False):
 
     ## Append plugin digesters.
     digesters.update(known_digesters)
-    for digester in digesters.keys():
+    for digester in list(digesters.keys()):
         if not is_algo_in_families(digester.upper(), families):
             digesters.pop(digester, None)
 
