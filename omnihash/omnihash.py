@@ -164,13 +164,29 @@ def is_algo_in_families(algo_name, families):
     return not families or any(f in algo_name for f in families)
 
 
+class LenDigester:
+    length = 0
+    
+    def update(self, b):
+        self.length += len(b)
+        
+    def digest(self):
+        return self.length
+
+
 def make_digesters(families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
+    
+    Each digester is a 2-tuple ``( digester.update_func(bytes), digest_func(digester) -> int)``.
     """
+    ## TODO: simplify digester-tuple API, ie: (digester, update_func(d), digest_func(d))
+
     families = set(f.upper() for f in families)
     digesters = OrderedDict()
 
+    digesters['LENGTH'] = (LenDigester(), LenDigester.digest)
+    
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
         # algorithms_available can have duplicates
@@ -185,7 +201,7 @@ def make_digesters(families, include_CRCs=False):
             aname = crc_name.upper()
             if is_algo_in_families(aname, families):
                 digesters[aname] = (crcmod.PredefinedCrc(crc_name),
-                                               lambda d: hex(d.crcValue))
+                                    lambda d: hex(d.crcValue))
 
     ## Append plugin digesters.
     digesters.update(known_digesters)
@@ -194,6 +210,7 @@ def make_digesters(families, include_CRCs=False):
             digesters.pop(digester, None)
 
     return digesters
+
 
 def produce_hashes(bytechunks, digesters, match, use_json=False):
     """
