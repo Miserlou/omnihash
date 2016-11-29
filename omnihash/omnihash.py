@@ -19,6 +19,9 @@ import validators
 # Algos
 import crcmod.predefined as crcmod
 
+##
+# Plugins
+##
 
 PLUGIN_GROUP_NAME = 'omnihash.plugins'
 
@@ -37,7 +40,6 @@ def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
             click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
                        ep, ep.dist, ex), err=1)
 
-
 # Plugin algos
 def plugin_sha3_digesters(include_CRCs=False):
     import sha3  # @UnresolvedImport
@@ -54,6 +56,9 @@ def plugin_pyblake2_digesters(include_CRCs=False):
     known_digesters['BLAKE2s'] = (pyblake2.blake2s(), lambda d: d.hexdigest())
     known_digesters['BLAKE2b'] = (pyblake2.blake2b(), lambda d: d.hexdigest())
 
+##
+# Classes
+##
 
 class FileIter(object):
     """An iterator that chunks in bytes a file-descriptor, auto-closing it when exhausted."""
@@ -71,6 +76,18 @@ class FileIter(object):
             self._fd.close()
             raise
 
+class LenDigester:
+    length = 0
+
+    def update(self, b):
+        self.length += len(b)
+
+    def digest(self):
+        return str(self.length)
+
+##
+# CLI
+##
 
 @click.command()
 @click.argument('hashmes', nargs=-1)
@@ -111,17 +128,21 @@ def main(click_context, hashmes, s, v, c, f, m, j):
             print(click_context.get_help())
             return
     else:
+        hash_many = len(hashmes) > 1
         for hashme in hashmes:
             digesters = make_digesters(f, c)
-            bytechunks = iterate_bytechunks(hashme, s, j)
+            bytechunks = iterate_bytechunks(hashme, s, j, hash_many)
             if bytechunks:
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
 
+##
+# Main Logic
+##
 
-def iterate_bytechunks(hashme, is_string=True, use_json=False):
+def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     """
     Prep our bytes.
     """
@@ -129,7 +150,7 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
     # URL
     if not is_string and validators.url(hashme):
         if not use_json:
-            click.echo("Hashing content of URL " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing content of URL " + click.style(hashme, bold=True) + "..", err=not hash_many)
         try:
             response = requests.get(hashme)
         except requests.exceptions.ConnectionError as e:
@@ -147,28 +168,29 @@ def iterate_bytechunks(hashme, is_string=True, use_json=False):
             return None
 
         if not use_json:
-            click.echo("Hashing file " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing file " + click.style(hashme, bold=True) + "..", err=not hash_many)
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
-            click.echo("Hashing string " + click.style("{}".format(hashme), bold=True) + "..", err=True)
+            click.echo("Hashing string " + click.style(hashme, bold=True) + "..", err=not hash_many)
         bytechunks = (hashme.encode('utf-8'), )
 
     return bytechunks
 
 
-def is_algo_in_families(algo_name, families):
-    """:param algo_name: make sure it is UPPER"""
-    return not families or any(f in algo_name for f in families)
-
-
 def make_digesters(families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
+
+    Each digester is a 2-tuple ``( digester.update_func(bytes), digest_func(digester) -> int)``.
     """
+    ## TODO: simplify digester-tuple API, ie: (digester, update_func(d), digest_func(d))
+
     families = set(f.upper() for f in families)
     digesters = OrderedDict()
+
+    digesters['LENGTH'] = (LenDigester(), LenDigester.digest)
 
     # Default Algos
     for algo in sorted(hashlib.algorithms_available):
@@ -184,15 +206,16 @@ def make_digesters(families, include_CRCs=False):
             aname = crc_name.upper()
             if is_algo_in_families(aname, families):
                 digesters[aname] = (crcmod.PredefinedCrc(crc_name),
-                                               lambda d: hex(d.crcValue))
+                                    lambda d: hex(d.crcValue))
 
     ## Append plugin digesters.
     digesters.update(known_digesters)
-    for digester in digesters.keys():
+    for digester in list(digesters.keys()):
         if not is_algo_in_families(digester.upper(), families):
             digesters.pop(digester, None)
 
     return digesters
+
 
 def produce_hashes(bytechunks, digesters, match, use_json=False):
     """
@@ -226,10 +249,22 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
 
     return results
 
+##
+# Util
+##
+
+def is_algo_in_families(algo_name, families):
+    """:param algo_name: make sure it is UPPER"""
+    return not families or any(f in algo_name for f in families)
+
 
 def echo(algo, digest, json=False):
     if not json:
         click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
+
+##
+# Entrypoint
+##
 
 if __name__ == '__main__':
     try:
