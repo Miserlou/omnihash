@@ -1,7 +1,7 @@
 from omnihash.omnihash import main
 import os
 import unittest
-import tempfile
+import sys
 
 import click
 from click.testing import CliRunner
@@ -47,6 +47,26 @@ class TOmnihash(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, result.exception)
         #print(result.output)
         self.assertIn('941c986ff0f3e90543dc5e2a0687ee99b19bff67', result.output)
+
+    @unittest.skipIf(sys.version_info[0] < 3, "unittest has no `assertRegex()`.")
+    def test_omnihashfile_length(self):
+        runner = CliRunner()
+
+        fpath = 'LICENSE'
+        text = 'hashme'
+        result = runner.invoke(main, [text, fpath])
+        self.assertEqual(result.exit_code, 0, result.exception)
+        self.assertRegex(result.output, r'LENGTH: +%i\D' % len(text))
+        filelen = os.stat(fpath).st_size
+        self.assertRegex(result.output, r'LENGTH: +%i\D' % filelen)
+
+    @unittest.skipIf(sys.version_info[0] < 3, "unittest has no `assertRegex()`.")
+    def test_omnihashfile_length_zero(self):
+        runner = CliRunner()
+
+        result = runner.invoke(main, [''])
+        self.assertEqual(result.exit_code, 0, result.exception)
+        self.assertRegex(result.output, r'LENGTH: +0\D')
 
     def test_omnihashf(self):
         runner = CliRunner()

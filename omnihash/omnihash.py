@@ -171,7 +171,7 @@ class LenDigester:
         self.length += len(b)
         
     def digest(self):
-        return self.length
+        return str(self.length)
 
 
 def make_digesters(families, include_CRCs=False):
