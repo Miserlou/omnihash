@@ -1,7 +1,7 @@
 from omnihash.omnihash import main
 import os
-import unittest
 import sys
+import unittest
 
 import click
 from click.testing import CliRunner
@@ -47,6 +47,15 @@ class TOmnihash(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, result.exception)
         #print(result.output)
         self.assertIn('941c986ff0f3e90543dc5e2a0687ee99b19bff67', result.output)
+
+    def test_omnihashfile_conjecutive(self):
+        import re
+        runner = CliRunner()
+        result = runner.invoke(main, 'LICENSE LICENSE -f sha1'.split())
+        self.assertEqual(result.exit_code, 0, result.exception)
+        #print(result.output)
+        matches = re.findall('941c986ff0f3e90543dc5e2a0687ee99b19bff67', result.output)
+        self.assertEqual(len(matches), 4)
 
     @unittest.skipIf(sys.version_info[0] < 3, "unittest has no `assertRegex()`.")
     def test_omnihashfile_length(self):
@@ -125,6 +134,14 @@ class TOmnihash(unittest.TestCase):
         print(result.output)
         self.assertIn('"MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"', result.output)
 
+    def test_omnihashfile_git(self):
+        runner = CliRunner()
+        result = runner.invoke(main, 'LICENSE -f git'.split())
+        self.assertEqual(result.exit_code, 0, result.exception)
+        #print(result.output)
+        self.assertIn('3e108735fcf3efac2b181874a34861a9fb5e7cc1', result.output)
+        self.assertIn('25063c5229e9e558e3207413a1fa56c6262eedc2', result.output)
+        self.assertIn('2c97833c235648e752a00f8ef709fbe2f3523ca4', result.output)
 
 if __name__ == '__main__':
     unittest.main()
