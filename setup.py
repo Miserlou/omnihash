@@ -66,4 +66,10 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     tests_require=['nose'],
+    options={
+        'bdist_wheel': {
+            'universal': True,
+        },
+    },
+    platforms=['any'],
 )
