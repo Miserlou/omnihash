@@ -57,8 +57,8 @@ setup(
             'oh = omnihash.omnihash:main',
         ],
         'omnihash.plugins': [
-            'a_sha3 = omnihash.omnihash:plugin_sha3_digesters [sha3]',
-            'b_pyblake2 = omnihash.omnihash:plugin_pyblake2_digesters [pyblake2]',
+            'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',
+            'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [pyblake2]',
         ],
     },
     extras_require={
