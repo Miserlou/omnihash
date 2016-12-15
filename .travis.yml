@@ -7,6 +7,6 @@ python:
 # command to install dependencies
 install:
 # - "pip install -r requirements.txt"
-  - "pip install setuptools --upgrade; python setup.py install; pip install nose"
+  - "pip install setuptools --upgrade; pip install -e .[sha3,pyblake2]; pip install nose"
 # command to run tests
 script: nosetests
