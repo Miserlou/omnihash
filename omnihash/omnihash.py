@@ -76,7 +76,7 @@ class GitSlurpDigester:
 
     def digest(self):
         fsize = len(self.fbytes)
-        digester = hashlib.sha1(b"%s %i\0" % (self.otype, fsize))
+        digester = hashlib.sha1(("%s %i\0" % (self.otype, fsize)).encode())
         digester.update(self.fbytes)
         return digester.hexdigest()
 
@@ -91,9 +91,9 @@ def add_git_digesters(digesters, fpath):
     except:
         ## Failback to slurp-digesters `fpath` is not a file.
         #
-        digesters['GIT-BLOB'] = (GitSlurpDigester(b'blob'), lambda d: d.digest())
-        digesters['GIT-COMMIT'] = (GitSlurpDigester(b'commit'), lambda d: d.digest())
-        digesters['GIT-TAG'] = (GitSlurpDigester(b'tag'), lambda d: d.digest())
+        digesters['GIT-BLOB'] = (GitSlurpDigester('blob'), lambda d: d.digest())
+        digesters['GIT-COMMIT'] = (GitSlurpDigester('commit'), lambda d: d.digest())
+        digesters['GIT-TAG'] = (GitSlurpDigester('tag'), lambda d: d.digest())
 
 
 ##
