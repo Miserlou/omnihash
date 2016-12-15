@@ -29,11 +29,14 @@ known_digesters = OrderedDict()
 
 def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
     entry_points = pkg_resources.working_set.iter_entry_points(plugin_group_name)
-    for ep in sorted(entry_points, key=lambda ep: ep.name):
+    entry_points = sorted(entry_points, key=lambda ep: ep.name)
+    for ep in entry_points:
         try:
             plugin_loader = ep.load()
             if callable(plugin_loader):
                 plugin_loader()
+        except pkg_resources.DistributionNotFound as ex:
+            pass
         except Exception as ex:
             click.echo('Failed LOADING plugin(%r@%s) due to: %s' % (
                        ep, ep.dist, ex), err=1)
