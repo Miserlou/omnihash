@@ -5,24 +5,22 @@
 from collections import OrderedDict
 import hashlib
 import io
-import itertools as itt
 import json
 import os
-import pkg_resources
 import sys
 
-# 3rd Party imports
 import click
+import pkg_resources
 import requests
 import validators
 
-# Algos
 import crcmod.predefined as crcmod
+import itertools as itt
+
 
 ##
 # Plugins
 ##
-
 PLUGIN_GROUP_NAME = 'omnihash.plugins'
 
 known_digesters = OrderedDict()
@@ -41,7 +39,7 @@ def intialize_plugins(plugin_group_name=PLUGIN_GROUP_NAME):
                        ep, ep.dist, ex), err=1)
 
 # Plugin algos
-def plugin_sha3_digesters(include_CRCs=False):
+def plugin_sha3_digesters():
     import sha3  # @UnresolvedImport
 
     known_digesters['SHA3_224'] = (sha3.SHA3224(), lambda d: d.hexdigest().decode("utf-8"))
@@ -50,11 +48,53 @@ def plugin_sha3_digesters(include_CRCs=False):
     known_digesters['SHA3_512'] = (sha3.SHA3512(), lambda d: d.hexdigest().decode("utf-8"))
 
 
-def plugin_pyblake2_digesters(include_CRCs=False):
+def plugin_pyblake2_digesters():
     import pyblake2  # @UnresolvedImport
 
     known_digesters['BLAKE2s'] = (pyblake2.blake2s(), lambda d: d.hexdigest())
     known_digesters['BLAKE2b'] = (pyblake2.blake2b(), lambda d: d.hexdigest())
+
+
+class GitSlurpDigester:
+    """
+    Produce Git-like hashes for bytes without knowing their size a priori.
+
+    Git SHA1-hashes the file-bytes prefixed with the filesize.
+    So when reading STDIN, we have to slurp the bytes to derive their length,
+    and hash them afterwards.
+
+    But it's not that we slurp multiple files, just the STDIN once.
+    """
+
+    fbytes = b''
+
+    def __init__(self, otype):
+        self.otype = otype
+
+    def update(self, fbytes):
+        self.fbytes += fbytes
+
+    def digest(self):
+        fsize = len(self.fbytes)
+        digester = hashlib.sha1(("%s %i\0" % (self.otype, fsize)).encode())
+        digester.update(self.fbytes)
+        return digester.hexdigest()
+
+
+def add_git_digesters(digesters, fpath):
+    """Note that contrary to ``git hash-object`` no unix2dos EOL is done!"""
+    try:
+        fsize = os.stat(fpath).st_size
+        digesters['GIT-BLOB'] = (hashlib.sha1(b"blob %i\0" % fsize), lambda d: d.hexdigest())
+        digesters['GIT-COMMIT'] = (hashlib.sha1(b"commit %i\0" % fsize), lambda d: d.hexdigest())
+        digesters['GIT-TAG'] = (hashlib.sha1(b"tag %i\0" % fsize), lambda d: d.hexdigest())
+    except:
+        ## Failback to slurp-digesters `fpath` is not a file.
+        #
+        digesters['GIT-BLOB'] = (GitSlurpDigester('blob'), lambda d: d.digest())
+        digesters['GIT-COMMIT'] = (GitSlurpDigester('commit'), lambda d: d.digest())
+        digesters['GIT-TAG'] = (GitSlurpDigester('tag'), lambda d: d.digest())
+
 
 ##
 # Classes
@@ -75,6 +115,7 @@ class FileIter(object):
         except StopIteration:
             self._fd.close()
             raise
+
 
 class LenDigester:
     length = 0
@@ -118,7 +159,7 @@ def main(click_context, hashmes, s, v, c, f, m, j):
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
-            digesters = make_digesters(f, c)
+            digesters = make_digesters(None, f, c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
@@ -130,13 +171,14 @@ def main(click_context, hashmes, s, v, c, f, m, j):
     else:
         hash_many = len(hashmes) > 1
         for hashme in hashmes:
-            digesters = make_digesters(f, c)
+            digesters = make_digesters(hashme, f, c)
             bytechunks = iterate_bytechunks(hashme, s, j, hash_many)
             if bytechunks:
                 results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
 
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
+
 
 ##
 # Main Logic
@@ -179,7 +221,7 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     return bytechunks
 
 
-def make_digesters(families, include_CRCs=False):
+def make_digesters(fpath, families, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
 
@@ -208,7 +250,10 @@ def make_digesters(families, include_CRCs=False):
                 digesters[aname] = (crcmod.PredefinedCrc(crc_name),
                                     lambda d: hex(d.crcValue))
 
+    add_git_digesters(digesters, fpath)
+
     ## Append plugin digesters.
+    #
     digesters.update(known_digesters)
     for digester in list(digesters.keys()):
         if not is_algo_in_families(digester.upper(), families):
@@ -248,6 +293,7 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
                 click.echo(click.style("No matches", fg='red') + " found!", err=True)
 
     return results
+
 
 ##
 # Util

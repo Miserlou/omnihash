@@ -1,10 +1,9 @@
+import io
 import os
-import sys
 
 from setuptools import setup
 import setuptools
 
-import omnihash
 
 # To support 2/3 installation
 setup_version = int(setuptools.__version__.split('.')[0])
@@ -13,12 +12,25 @@ if setup_version < 18:
     print("pip install -U pip wheel setuptools")
     quit()
 
+mydir = os.path.dirname(__file__)
+
 # Set external files
 try:
     from pypandoc import convert
     README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+
+
+## Version-trick to have version-info in a single place, taken from:
+# http://stackoverflow.com/questions/2058802/how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package
+#
+def read_project_version():
+    fglobals = {}
+    with io.open(os.path.join(
+            mydir, 'omnihash', '__init__.py'), encoding='UTF-8') as fd:
+        exec(fd.read(), fglobals)  # To read __version__
+    return fglobals['__version__']
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = [l for l in f.read().splitlines()  # Exclude extras.
@@ -29,7 +41,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='omnihash',
-    version=omnihash.__version__,
+    version=read_project_version(),
     packages=['omnihash'],
     install_requires=required,
     include_package_data=True,
@@ -66,4 +78,11 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     tests_require=['nose'],
+    zip_safe=True,
+    options={
+        'bdist_wheel': {
+            'universal': True,
+        },
+    },
+    platforms=['any'],
 )
