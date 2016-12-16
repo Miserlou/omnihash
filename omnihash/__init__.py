@@ -32,7 +32,7 @@ class DigesterFactories(OrderedDict):
     A *digester* must support the following methods:
 
     - ``update(bytes)``
-    - ``hexdigest() -> str``
+    - ``hexdigest() -> [str, bytes]  # case-insensitive``
 
     .. Note::
        The *algo-names* must alway be given in UPPER.
@@ -280,14 +280,9 @@ def append_hashlib_digesters(digfacts):
 def append_crc_digesters(digfacts):
     import crcmod.predefined as crcmod
 
-    class MyCrc(crcmod.PredefinedCrc, object):
-        # Overridden just to convert hexdigest() into lower.
-        def hexdigest(self):
-            return super(MyCrc, self).hexdigest().lower()
-
     def digester_fact(crc_name, fsize):
         # A factory that ignores the `fsize` arg.
-        return MyCrc(crc_name)
+        return crcmod.PredefinedCrc(crc_name)
 
     algos = sorted(rec[0].upper() for rec in crcmod._crc_definitions_table)
     digfacts.update((algo, fnt.partial(digester_fact, algo))
@@ -335,6 +330,10 @@ def produce_hashes(fsize, bytechunks, digfacts, match, use_json=False):
             digester.update(b)
 
         result = digester.hexdigest()
+        if isinstance(result, bytes):
+            result = result.decode()
+        result = result.lower()
+
         if match:
             if match in result:
                 echo(algo, result, use_json)
