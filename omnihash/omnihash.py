@@ -6,17 +6,66 @@ from collections import OrderedDict
 import hashlib
 import io
 import json
-from omnihash import plugin
 import os
 import sys
 
 import click
 import pkg_resources
-import requests
 import validators
 
-import crcmod.predefined as crcmod
+import functools as fnt
 import itertools as itt
+
+
+class DigesterFactories(OrderedDict):
+    """
+    Implements the inclusion/exclusion logic for registering *digester-factories*.
+
+    This dict contains pairs like this::
+
+        {<ALGO-NAME>: <digester-factory>}
+
+    where a ``<digester-factory>`` are functions like this::
+
+        foo(fsize_or_none) -> digester
+
+    A *digester* must support the following methods:
+
+    - ``update(bytes)``
+    - ``hexdigest() -> str``
+
+    .. Note::
+       The *algo-names* must alway be given in UPPER.
+
+    """
+    def __init__(self, includes, excludes):
+        super(DigesterFactories, self).__init__()
+        self.includes = includes
+        self.excludes = excludes
+
+    def register_if_accepted(self, algo, factory):
+        assert algo.isupper(), algo
+        if self.is_algo_accepted(algo):
+            self[algo] = factory
+
+    def is_algo_accepted(self, algo):
+        """
+        Invoked by :meth:`register_if_accepted()` or by client BEFORE item-assign, not to create needless dig-factory.
+
+        :param algo:
+            The UPPER name of the digester to be used as the key in the registry.
+        """
+        assert algo.isupper(), algo
+        includes = self.includes
+        excludes = self.excludes
+        is_included = not includes or any(f in algo for f in includes)
+        is_excluded = excludes and any(f in algo for f in excludes)
+
+        return is_included and not is_excluded
+
+
+def git_header(otype, fsize):
+    return ("%s %i\0" % (otype, fsize)).encode()
 
 
 class GitSlurpDigester:
@@ -33,36 +82,58 @@ class GitSlurpDigester:
     fbytes = b''
 
     def __init__(self, otype):
+        # str
         self.otype = otype
 
     def update(self, fbytes):
         self.fbytes += fbytes
 
-    def digest(self):
+    def hexdigest(self):
         fsize = len(self.fbytes)
-        digester = hashlib.sha1(("%s %i\0" % (self.otype, fsize)).encode())
+        digester = hashlib.sha1(git_header(self.otype, fsize))
         digester.update(self.fbytes)
         return digester.hexdigest()
 
 
-def add_git_digesters(digesters, fpath):
-    """Note that contrary to ``git hash-object`` no unix2dos EOL is done!"""
-    try:
-        fsize = os.stat(fpath).st_size
-        digesters['GIT-BLOB'] = (hashlib.sha1(b"blob %i\0" % fsize), lambda d: d.hexdigest())
-        digesters['GIT-COMMIT'] = (hashlib.sha1(b"commit %i\0" % fsize), lambda d: d.hexdigest())
-        digesters['GIT-TAG'] = (hashlib.sha1(b"tag %i\0" % fsize), lambda d: d.hexdigest())
-    except:
-        ## Failback to slurp-digesters `fpath` is not a file.
-        #
-        digesters['GIT-BLOB'] = (GitSlurpDigester('blob'), lambda d: d.digest())
-        digesters['GIT-COMMIT'] = (GitSlurpDigester('commit'), lambda d: d.digest())
-        digesters['GIT-TAG'] = (GitSlurpDigester('tag'), lambda d: d.digest())
+def append_git_digesters(digfacts):
+    """
+    Note that contrary to ``git hash-object`` no unix2dos EOL is done!
+
+    :param digfacts:
+    :type digfacts: DigesterFactories
+    """
+
+    def git_factory(otype, fsize):
+        """If `fsize` is known, chunk-hash file, else it slurps it."""
+        if fsize is None:
+            digester = GitSlurpDigester(otype)
+        else:
+            digester = hashlib.sha1(git_header(otype, fsize))
+
+        return digester
+
+    algo_pairs = (('GIT-%s' % otype.upper(), otype) for otype in 'blob commit tag'.split())
+    digfacts.update(('GIT-%s' % otype.upper(), fnt.partial(git_factory, otype))
+                    for algo, otype in algo_pairs
+                    if digfacts.is_algo_accepted(algo))
 
 
-##
-# Classes
-##
+class LenDigester:
+    fsize = 0
+
+    def __init__(self, fsize):
+        if fsize is not None:
+            self.fsize = -fsize
+
+    def update(self, b):
+        if self.fsize >= 0:
+            self.fsize += len(b)
+
+    def hexdigest(self):
+        if self.fsize < 0:
+            self.fsize = -self.fsize
+        return str(self.fsize)
+
 
 class FileIter(object):
     """An iterator that chunks in bytes a file-descriptor, auto-closing it when exhausted."""
@@ -81,16 +152,6 @@ class FileIter(object):
             raise
 
 
-class LenDigester:
-    length = 0
-
-    def update(self, b):
-        self.length += len(b)
-
-    def digest(self):
-        return str(self.length)
-
-
 ##
 # CLI
 ##
@@ -101,15 +162,20 @@ class LenDigester:
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
 @click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
 @click.option('-f', is_flag=False, default=False, multiple=True,
-              help="Select one or more family of algorithms: "
-              "include only algos having TEXT (ci) in their names.")
+              help=("Select a family of algorithms: "
+                    "include only algos having TEXT in their names."
+                    "Use it multiple times to select more families."))
+@click.option('-x', is_flag=False, default=False, multiple=True,
+              help=("Exclude a family of algorithms: "
+                    "skip algos having TEXT in their names."
+                    "Use it multiple times to exclude more families."))
 @click.option('-m', is_flag=False, default=False, help="Match input string.")
 @click.option('-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c, f, m, j):
+def main(click_context, hashmes, s, v, c, f, x, m, j):
     """
-    If there is a file at hashme, read and omnihash that file.
-    Elif hashme is a string, omnihash that.
+    If there is a file at `hashme`, read and omnihash that.
+    Otherwise, assume `hashme` is a string.
     """
 
     # Print version and quit
@@ -118,18 +184,17 @@ def main(click_context, hashmes, s, v, c, f, m, j):
         click.echo(version)
         return
 
-    plugin.intialize_plugins()
+    digfacts = collect_digester_factories(f, x, c)
 
     results = []
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
-            digesters = make_digesters(None, f, c)
             stdin = click.get_binary_stream('stdin')
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
                 click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
-            results.append([produce_hashes(bytechunks, digesters, match=m, use_json=j)])
+            results.append([produce_hashes(None, bytechunks, digfacts, match=m, use_json=j)])
         else:
             print(click_context.get_help())
             return
@@ -137,10 +202,10 @@ def main(click_context, hashmes, s, v, c, f, m, j):
         hash_many = len(hashmes) > 1
         for hashme in hashmes:
             result = {}
-            digesters = make_digesters(hashme, f, c)
-            bytechunks = iterate_bytechunks(hashme, s, j, hash_many)
-            if bytechunks:
-                result = produce_hashes(bytechunks, digesters, match=m, use_json=j)
+            data = iterate_bytechunks(hashme, s, j, hash_many)
+            if data:
+                length, bytechunks = data
+                result = produce_hashes(length, bytechunks, digfacts, match=m, use_json=j)
             if result:
                 result['NAME'] = hashme
                 results.append(result)
@@ -155,11 +220,13 @@ def main(click_context, hashmes, s, v, c, f, m, j):
 
 def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     """
-    Prep our bytes.
+    Return iterable bytes and content-length if possible.
     """
 
     # URL
     if not is_string and validators.url(hashme):
+        import requests
+
         if not use_json:
             click.echo("Hashing content of URL " + click.style(hashme, bold=True) + "..", err=not hash_many)
         try:
@@ -170,6 +237,11 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
             raise ValueError("Not a valid URL. {}.".format(e))
         if response.status_code != 200:
             click.echo("Response returned %s. :(" % response.status_code, err=True)
+        try:
+            fsize = int(response.headers.get('Content-Length'))
+        except Exception as ex:
+            click.echo("[Could not get response-size due to: %s" % ex, err=True)
+            fsize = None
         bytechunks = response.iter_content()
     # File
     elif os.path.exists(hashme) and not is_string:
@@ -180,73 +252,89 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
 
         if not use_json:
             click.echo("Hashing file " + click.style(hashme, bold=True) + "..", err=not hash_many)
+        fsize = os.stat(hashme).st_size
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
     else:
         if not use_json:
             click.echo("Hashing string " + click.style(hashme, bold=True) + "..", err=not hash_many)
-        bytechunks = (hashme.encode('utf-8'), )
+        bhashme = hashme.encode('utf-8')
+        fsize = len(bhashme)
+        bytechunks = (bhashme, )
 
-    return bytechunks
+    return fsize, bytechunks
 
 
-def make_digesters(fpath, families, include_CRCs=False):
+def append_hashlib_digesters(digfacts):
+    """Apend python-default digesters."""
+    def digester_fact(algo_name, fsize):
+        # A factory that ignores the `fsize` arg.
+        return hashlib.new(algo_name)
+
+    algos = sorted(hashlib.algorithms_available)
+    digfacts.update((algo.upper(), fnt.partial(digester_fact, algo))
+                    for algo in algos
+                    if algo not in digfacts and digfacts.is_algo_accepted(algo.upper()))
+
+
+def append_crc_digesters(digfacts):
+    import crcmod.predefined as crcmod
+
+    class MyCrc(crcmod.PredefinedCrc, object):
+        # Overridden just to convert hexdigest() into lower.
+        def hexdigest(self):
+            return super(MyCrc, self).hexdigest().lower()
+
+    def digester_fact(crc_name, fsize):
+        # A factory that ignores the `fsize` arg.
+        return MyCrc(crc_name)
+
+    algos = sorted(rec[0].upper() for rec in crcmod._crc_definitions_table)
+    digfacts.update((algo, fnt.partial(digester_fact, algo))
+                    for algo in algos
+                    if digfacts.is_algo_accepted(algo))
+
+
+def collect_digester_factories(includes, excludes, include_CRCs=False):
     """
     Create and return a dictionary of all our active hash algorithms.
 
     Each digester is a 2-tuple ``( digester.update_func(bytes), digest_func(digester) -> int)``.
     """
-    ## TODO: simplify digester-tuple API, ie: (digester, update_func(d), digest_func(d))
+    from omnihash import plugin
 
-    families = set(f.upper() for f in families)
-    digesters = OrderedDict()
+    digfacts = DigesterFactories([i.upper() for i in includes],
+                                 [i.upper() for i in excludes])
 
-    digesters['LENGTH'] = (LenDigester(), LenDigester.digest)
-
-    # Default Algos
-    for algo in sorted(hashlib.algorithms_available):
-        # algorithms_available can have duplicates
-        aname = algo.upper()
-        if aname not in digesters and is_algo_in_families(aname, families):
-            digesters[aname] = (hashlib.new(algo), lambda d: d.hexdigest())
-
-    # CRC
+    digfacts.register_if_accepted('LENGTH', LenDigester)
+    append_hashlib_digesters(digfacts)
+    plugin.append_plugin_digesters(digfacts)
+    append_git_digesters(digfacts)
     if include_CRCs:
-        for name in sorted(crcmod._crc_definitions_by_name):
-            crc_name = crcmod._crc_definitions_by_name[name]['name']
-            aname = crc_name.upper()
-            if is_algo_in_families(aname, families):
-                digesters[aname] = (crcmod.PredefinedCrc(crc_name),
-                                    lambda d: hex(d.crcValue))
+        append_crc_digesters(digfacts)
 
-    add_git_digesters(digesters, fpath)
+    assert all(k.isupper() for k in digfacts.keys()), list(digfacts.keys())
 
-    ## Append plugin digesters.
-    #
-    digesters.update(plugin.known_digesters)
-    for digester in list(digesters.keys()):
-        if not is_algo_in_families(digester.upper(), families):
-            digesters.pop(digester, None)
-
-    return digesters
+    return digfacts
 
 
-def produce_hashes(bytechunks, digesters, match, use_json=False):
+def produce_hashes(fsize, bytechunks, digfacts, match, use_json=False):
     """
     Given our bytes and our algorithms, calculate and print our hashes.
     """
 
     # Produce hashes
-    streams = itt.tee(bytechunks, len(digesters))
-    batch = zip(streams, digesters.items())
+    streams = itt.tee(bytechunks, len(digfacts))
+    batch = zip(streams, digfacts.items())
     results = {}
 
     match_found = False
-    for stream, (algo, (digester, hashfunc)) in batch:
+    for stream, (algo, fact) in batch:
+        digester = fact(fsize)
         for b in stream:
             digester.update(b)
 
-        result = hashfunc(digester)
+        result = digester.hexdigest()
         if match:
             if match in result:
                 echo(algo, result, use_json)
@@ -267,11 +355,6 @@ def produce_hashes(bytechunks, digesters, match, use_json=False):
 ##
 # Util
 ##
-
-def is_algo_in_families(algo_name, families):
-    """:param algo_name: make sure it is UPPER"""
-    return not families or any(f in algo_name for f in families)
-
 
 def echo(algo, digest, json=False):
     if not json:

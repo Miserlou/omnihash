@@ -102,7 +102,7 @@ class TOmnihash(unittest.TestCase):
         out = """
   SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
   SHA256:                3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8
-  CRC-8-ITU:             0xbe
+  CRC-8-ITU:             be
 """
         #print(out)
         self.assertIn(out, result.output)
