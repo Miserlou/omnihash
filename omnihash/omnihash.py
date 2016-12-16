@@ -155,7 +155,7 @@ def main(click_context, hashmes, s, v, c, f, m, j):
 
     intialize_plugins()
 
-    results = None
+    results = []
     if not hashmes:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
@@ -164,17 +164,21 @@ def main(click_context, hashmes, s, v, c, f, m, j):
             bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
             if not j:
                 click.echo("Hashing " + click.style("standard input", bold=True) + "..", err=True)
-            results = produce_hashes(bytechunks, digesters, match=m)
+            results.append([produce_hashes(bytechunks, digesters, match=m, use_json=j)])
         else:
             print(click_context.get_help())
             return
     else:
         hash_many = len(hashmes) > 1
         for hashme in hashmes:
+            result = {}
             digesters = make_digesters(hashme, f, c)
             bytechunks = iterate_bytechunks(hashme, s, j, hash_many)
             if bytechunks:
-                results = produce_hashes(bytechunks, digesters, match=m, use_json=j)
+                result = produce_hashes(bytechunks, digesters, match=m, use_json=j)
+            if result:
+                result['NAME'] = hashme
+                results.append(result)
 
     if results and j:
         print(json.dumps(results, indent=4, sort_keys=True))
