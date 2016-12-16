@@ -184,6 +184,7 @@ def main(click_context, hashmes, s, v, c, f, x, m, j):
         click.echo(version)
         return
 
+    m = m and m.lower()
     digfacts = collect_digester_factories(f, x, c)
 
     results = []

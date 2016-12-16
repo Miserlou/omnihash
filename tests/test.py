@@ -125,8 +125,8 @@ class TOmnihash(unittest.TestCase):
     def test_url(self):
         runner = CliRunner()
         result = runner.invoke(oh.main, ['hashme',
-                                      'https://www.google.com/images/branding/googlelogo/'
-                                      '2x/googlelogo_color_272x92dp.png', '-c'],
+                                         'https://www.google.com/images/branding/googlelogo/'
+                                         '2x/googlelogo_color_272x92dp.png', '-c'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
@@ -134,7 +134,7 @@ class TOmnihash(unittest.TestCase):
         self.assertIn('809089', result.output)
 
         result = runner.invoke(oh.main, ['hashme', 'https://www.google.com/images/branding/googlelogo/'
-                                      '2x/googlelogo_color_272x92dp.png', '-sc'],
+                                         '2x/googlelogo_color_272x92dp.png', '-sc'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
@@ -143,7 +143,7 @@ class TOmnihash(unittest.TestCase):
 
     def test_json(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ["correct horse battery staple", "-j", "-m", "9cc2"], catch_exceptions=False)
+        result = runner.invoke(oh.main, ["correct horse battery staple", "-j", "-m", "9cC2"], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('"MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"', result.output)
@@ -184,10 +184,10 @@ class TOmnihash(unittest.TestCase):
         #  so check matches >= 2.
         #
         self.assertGreaterEqual(len(re.findall('4bb3e5bffb04cd659f791cd4d36cf3f31c0950c916402a871d47e180f47491e8',
-                                        result.output)), 2, 'BLAKE2s' + result.output)
+                                               result.output)), 2, 'BLAKE2s' + result.output)
         self.assertGreaterEqual(len(re.findall('827d2797e521f0bff107cabe1babe0860e4c0ab43dd06476b970cbe2711702bc0'
                                     '99534b8dfa13df74fab8548eedea26763d0f4c3879c4fe514acb0eda69eb68a',
-                                        result.output)), 2, 'BLAKE2b' + result.output)
+                                               result.output)), 2, 'BLAKE2b' + result.output)
 
 if __name__ == '__main__':
     unittest.main()
