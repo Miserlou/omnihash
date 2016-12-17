@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Standard Imports
 from collections import OrderedDict
 import hashlib
 import io
@@ -15,6 +13,13 @@ import validators
 
 import functools as fnt
 import itertools as itt
+
+
+from omnihash._version import __version__
+__license__ = "MIT License"
+__title__ = "omnihash"
+__summary__ = "Hash files/strings/streams/network-resources simultaneously in various algorithms."
+__uri__ = "https://github.com/Miserlou/omnihash"
 
 
 class DigesterFactories(OrderedDict):
