@@ -6,7 +6,7 @@ import unittest
 import click
 from click.testing import CliRunner
 
-import omnihash as oh
+import omnihash.__main__ as oh
 
 
 def safe_str(obj):
