@@ -28,7 +28,7 @@ except ImportError:
 def read_project_version():
     fglobals = {}
     with io.open(os.path.join(
-            mydir, 'omnihash', '__init__.py'), encoding='UTF-8') as fd:
+            mydir, 'omnihash', '_version.py'), encoding='UTF-8') as fd:
         exec(fd.read(), fglobals)  # To read __version__
     return fglobals['__version__']
 
@@ -53,12 +53,12 @@ setup(
     author_email='rich@openwatch.net',
     entry_points={
         'console_scripts': [
-            'omnihash = omnihash.omnihash:main',
-            'oh = omnihash.omnihash:main',
+            'omnihash = omnihash.__init__:main',
+            'oh = omnihash.__init__:main',
         ],
         'omnihash.plugins': [
-            'a_sha3 = omnihash.omnihash:plugin_sha3_digesters [sha3]',
-            'b_pyblake2 = omnihash.omnihash:plugin_pyblake2_digesters [pyblake2]',
+            'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',
+            'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [pyblake2]',
         ],
     },
     extras_require={
