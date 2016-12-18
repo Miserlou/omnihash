@@ -207,9 +207,18 @@ More information can be found with `--help`.
 
 ## Extension plugins
 
-You may extend the supported hashing algorithms using [*setuptools*'s extension machanism](https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins),
+You may extend the supported hashing algorithms using
+[*setuptools*'s extension machanism](https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins),
 by crafting python ditributions (plugins) that attach to the `'omnihash.plugins' entry_point`.
-Read the sources of this project as example, since the mechanism is already utilized for the "extras" dependencies.
+Read the sources of this project as example, since the mechanism is already utilized
+to install "extra" digesters depending on those external libraries:
+- [`sha3`](https://pypi.org/project/sha3/),
+- [`pyblake2`](https://pypi.org/project/pyblake2/),
+- [`crcmod`](https://pypi.org/project/crcmod/).
+
+You may install the dependencies required for these plugins using a command like this:
+
+    pip install omnihash[sha3,pyblake2,crc]
 
 ### License
 

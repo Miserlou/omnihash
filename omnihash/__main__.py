@@ -34,7 +34,6 @@ class FileIter(object):
 @click.argument('hashmes', nargs=-1)
 @click.option('-s', is_flag=True, default=False, help="Hash input as string, even if there is a file with that name.")
 @click.option('-v', is_flag=True, default=False, help="Show version and quit.")
-@click.option('-c', is_flag=True, default=False, help="Calculate CRCs as well.")
 @click.option('-f', is_flag=False, default=False, multiple=True,
               help=("Select a family of algorithms: "
                     "include only algos having TEXT in their names."
@@ -46,7 +45,7 @@ class FileIter(object):
 @click.option('-m', is_flag=False, default=False, help="Match input string.")
 @click.option('-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, hashmes, s, v, c, f, x, m, j):
+def main(click_context, hashmes, s, v, f, x, m, j):
     """
     If there is a file at `hashme`, read and omnihash that.
     Otherwise, assume `hashme` is a string.
@@ -59,7 +58,7 @@ def main(click_context, hashmes, s, v, c, f, x, m, j):
         return
 
     m = m and m.lower()
-    digfacts = omnihash.collect_digester_factories(f, x, c)
+    digfacts = omnihash.collect_digester_factories(f, x)
 
     results = []
     if not hashmes:

@@ -29,6 +29,25 @@ def append_plugin_digesters(digfacts, plugin_group_name=PLUGIN_GROUP_NAME):
                        ep, ep.dist, ex), err=1)
 
 
+def plugin_crc_digesters(digfacts):
+    import crcmod.predefined as crcmod
+
+    def ensure_crc_prefix(name):
+        name = name.upper()
+        if not name.startswith('CRC-'):
+            name = 'CRC-%s' % name
+        return name
+
+    def digester_fact(crc_name, fsize):
+        # A factory that ignores the `fsize` arg.
+        return crcmod.PredefinedCrc(crc_name)
+
+    algo_pairs = sorted(ensure_crc_prefix(rec[0]) for rec in crcmod._crc_definitions_table)
+    digfacts.update((algo, fnt.partial(digester_fact, algo))
+                    for algo in algo_pairs
+                    if digfacts.is_algo_accepted(algo))
+
+
 def plugin_sha3_digesters(digfacts):
     import sha3  # @UnresolvedImport because it is optional.
 

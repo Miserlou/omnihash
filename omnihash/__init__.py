@@ -258,20 +258,7 @@ def append_git_digesters(digfacts):
                     if digfacts.is_algo_accepted(algo))
 
 
-def append_crc_digesters(digfacts):
-    import crcmod.predefined as crcmod
-
-    def digester_fact(crc_name, fsize):
-        # A factory that ignores the `fsize` arg.
-        return crcmod.PredefinedCrc(crc_name)
-
-    algos = sorted(rec[0].upper() for rec in crcmod._crc_definitions_table)
-    digfacts.update((algo, fnt.partial(digester_fact, algo))
-                    for algo in algos
-                    if digfacts.is_algo_accepted(algo))
-
-
-def collect_digester_factories(includes, excludes, include_CRCs=False):
+def collect_digester_factories(includes, excludes):
     """
     Create and return a dictionary of all our active hash algorithms.
 
@@ -284,10 +271,8 @@ def collect_digester_factories(includes, excludes, include_CRCs=False):
 
     digfacts.register_if_accepted('LENGTH', LenDigester)
     append_hashlib_digesters(digfacts)
-    plugin.append_plugin_digesters(digfacts)
     append_git_digesters(digfacts)
-    if include_CRCs:
-        append_crc_digesters(digfacts)
+    plugin.append_plugin_digesters(digfacts)
 
     assert all(k.isupper() for k in digfacts.keys()), list(digfacts.keys())
 

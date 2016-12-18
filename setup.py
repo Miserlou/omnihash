@@ -33,8 +33,15 @@ def read_project_version():
     return fglobals['__version__']
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
-    required = [l for l in f.read().splitlines()  # Exclude extras.
-                if not any(r in l for r in ('pyblake2', 'sha3'))]
+    required = []
+    for l in f.read().splitlines():
+        ## Exclude extras & comments.
+        #
+        if not l.strip().startswith('#'):
+            required.append(l)
+        elif 'EXTRAS' in l:
+            break
+
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
@@ -59,11 +66,13 @@ setup(
         'omnihash.plugins': [
             'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',
             'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [pyblake2]',
+            'c_crc = omnihash.plugin:plugin_crc_digesters [crc]',
         ],
     },
     extras_require={
         'sha3': ['sha3'],
         'pyblake2': ['pyblake2'],
+        'crc': ['crcmod'],
     },
     classifiers=[
         'Environment :: Console',
