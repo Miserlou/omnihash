@@ -59,7 +59,7 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
         except requests.exceptions.ConnectionError as e:
             raise ValueError("Not a valid URL. :(")
         except Exception as e:
-            raise ValueError("Not a valid URL. {}.".format(e))
+            raise ValueError("Failed reading URL due to: {}".format(e))
         if response.status_code != 200:
             click.echo("Response returned %s. :(" % response.status_code, err=True)
         try:
@@ -69,7 +69,7 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
             fsize = None
         bytechunks = response.iter_content()
     # File
-    elif os.path.exists(hashme) and not is_string:
+    elif not is_string and os.path.exists(hashme):
         if os.path.isdir(hashme):
             if not use_json:
                 click.echo(click.style("Skipping", fg="yellow") + " directory " + "'" + hashme + "'..", err=True)
@@ -113,12 +113,12 @@ def produce_hashes(fsize, bytechunks, digfacts, match, use_json=False):
 
         if match:
             if match in result:
-                echo(algo, result, use_json)
+                echo_hash(algo, result, use_json)
                 results[algo] = result
                 match_found = True
         else:
             results[algo] = result
-            echo(algo, result, use_json)
+            echo_hash(algo, result, use_json)
 
     if match:
         if not match_found:
@@ -283,6 +283,6 @@ def collect_digester_factories(includes, excludes):
 # Util
 ##
 
-def echo(algo, digest, json=False):
+def echo_hash(algo, digest, json=False):
     if not json:
         click.echo('  %-*s%s' % (32, click.style(algo, fg='green') + ':', digest))
