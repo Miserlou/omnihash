@@ -28,13 +28,20 @@ except ImportError:
 def read_project_version():
     fglobals = {}
     with io.open(os.path.join(
-            mydir, 'omnihash', '__init__.py'), encoding='UTF-8') as fd:
+            mydir, 'omnihash', '_version.py'), encoding='UTF-8') as fd:
         exec(fd.read(), fglobals)  # To read __version__
     return fglobals['__version__']
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
-    required = [l for l in f.read().splitlines()  # Exclude extras.
-                if not any(r in l for r in ('pyblake2', 'sha3'))]
+    required = []
+    for l in f.read().splitlines():
+        ## Exclude extras & comments.
+        #
+        if not l.strip().startswith('#'):
+            required.append(l)
+        elif 'EXTRAS' in l:
+            break
+
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
@@ -53,17 +60,19 @@ setup(
     author_email='rich@openwatch.net',
     entry_points={
         'console_scripts': [
-            'omnihash = omnihash.omnihash:main',
-            'oh = omnihash.omnihash:main',
+            'omnihash = omnihash.__main__:main',
+            'oh = omnihash.__main__:main_fallback_to_str',
         ],
         'omnihash.plugins': [
-            'a_sha3 = omnihash.omnihash:plugin_sha3_digesters [sha3]',
-            'b_pyblake2 = omnihash.omnihash:plugin_pyblake2_digesters [pyblake2]',
+            'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',
+            'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [blake2]',
+            'c_crc = omnihash.plugin:plugin_crc_digesters [crc]',
         ],
     },
     extras_require={
         'sha3': ['sha3'],
-        'pyblake2': ['pyblake2'],
+        'blake2': ['pyblake2'],
+        'crc': ['crcmod'],
     },
     classifiers=[
         'Environment :: Console',
