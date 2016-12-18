@@ -135,9 +135,10 @@ class TOmnihash(unittest.TestCase):
 
     def test_url(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main_fallback_to_str, ['hashme',
-                                         'https://www.google.com/images/branding/googlelogo/'
-                                         '2x/googlelogo_color_272x92dp.png'],
+        result = runner.invoke(oh.main_fallback_to_str,
+                               ['hashme',
+                                'https://www.google.com/images/branding/googlelogo/'
+                                '2x/googlelogo_color_272x92dp.png'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
@@ -145,8 +146,10 @@ class TOmnihash(unittest.TestCase):
         if is_module_ok('crcmod'):
             self.assertIn('809089', result.output)
 
-        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'https://www.google.com/images/branding/googlelogo/'
-                                         '2x/googlelogo_color_272x92dp.png', '-s'],
+        result = runner.invoke(oh.main_fallback_to_str,
+                               ['hashme',
+                                'https://www.google.com/images/branding/googlelogo/'
+                                '2x/googlelogo_color_272x92dp.png', '-s'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
@@ -154,9 +157,31 @@ class TOmnihash(unittest.TestCase):
         if is_module_ok('crcmod'):
             self.assertIn('20d9c2bbdbaf669b', result.output)
 
+    def test_url_git(self):
+        runner = CliRunner()
+        result1 = runner.invoke(oh.main_fallback_to_str,
+                                ['https://raw.githubusercontent.com/Miserlou/omnihash/master/LICENSE',
+                                 '-f', 'git-blob'],
+                                catch_exceptions=False)
+        #print(result.output)
+        self.assertEqual(result1.exit_code, 0)
+
+        result2 = runner.invoke(oh.main_fallback_to_str,
+                                ['LICENSE', '-f', 'git-blob'],
+                                catch_exceptions=False)
+        #print(result.output)
+        self.assertEqual(result2.exit_code, 0)
+
+        h1 = re.search(r'GIT-BLOB: +([\dabcdef]+)$', result1.output).group(1)
+        h2 = re.search(r'GIT-BLOB: +([\dabcdef]+)$', result2.output).group(1)
+        self.assertEqual(h1, h2, (result1.output, result2.output))
+        self.assertEqual(h1, '3e108735fcf3efac2b181874a34861a9fb5e7cc1', (result1.output, result2.output))
+
     def test_json(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main_fallback_to_str, ["correct horse battery staple", "-j", "-m", "9cC2"], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str,
+                               ["correct horse battery staple", "-j", "-m", "9cC2"],
+                               catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('"MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"', result.output)
