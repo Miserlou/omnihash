@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import unittest
+import importlib
 
 import click
 from click.testing import CliRunner
@@ -15,6 +16,14 @@ def safe_str(obj):
     except Exception as ex:
         s = ex
     return s
+
+
+def is_module_ok(modname):
+    try:
+        importlib.import_module(modname)
+        return True
+    except ImportError:
+        return False
 
 
 class TOmnihash(unittest.TestCase):
@@ -98,15 +107,16 @@ class TOmnihash(unittest.TestCase):
 """
         self.assertIn(out, result.output)
 
-        result = runner.invoke(oh.main, 'Hi -c -f sha2 -c -f ITU'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main, 'Hi -f sha2 -f ITU'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         out = """
   SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
   SHA256:                3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8
-  CRC-8-ITU:             be
 """
         #print(out)
         self.assertIn(out, result.output)
+        if is_module_ok('crcmod'):
+            self.assertIn('CRC-8-ITU:             be', result.output)
 
     def test_omnihashs(self):
         runner = CliRunner()
@@ -116,30 +126,33 @@ class TOmnihash(unittest.TestCase):
 
     def test_omnihashcrc(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme', 'README.md', '-sc'], catch_exceptions=False)
+        result = runner.invoke(oh.main, ['hashme', 'README.md', '-s'], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('fb78992e561929a6967d5328f49413fa99048d06', result.output)
-        self.assertIn('5d20a7c38be78000', result.output)
+        if is_module_ok('crcmod'):
+            self.assertIn('5d20a7c38be78000', result.output)
 
     def test_url(self):
         runner = CliRunner()
         result = runner.invoke(oh.main, ['hashme',
                                          'https://www.google.com/images/branding/googlelogo/'
-                                         '2x/googlelogo_color_272x92dp.png', '-c'],
+                                         '2x/googlelogo_color_272x92dp.png'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('26f471f6ebe3b11557506f6ae96156e0a3852e5b', result.output)
-        self.assertIn('809089', result.output)
+        if is_module_ok('crcmod'):
+            self.assertIn('809089', result.output)
 
         result = runner.invoke(oh.main, ['hashme', 'https://www.google.com/images/branding/googlelogo/'
-                                         '2x/googlelogo_color_272x92dp.png', '-sc'],
+                                         '2x/googlelogo_color_272x92dp.png', '-s'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('b61bad1cb3dfad6258bef11b12361effebe597a8c80131cd2d6d07fce2206243', result.output)
-        self.assertIn('20d9c2bbdbaf669b', result.output)
+        if is_module_ok('crcmod'):
+            self.assertIn('20d9c2bbdbaf669b', result.output)
 
     def test_json(self):
         runner = CliRunner()
@@ -157,6 +170,7 @@ class TOmnihash(unittest.TestCase):
         self.assertIn('25063c5229e9e558e3207413a1fa56c6262eedc2', result.output)
         self.assertIn('2c97833c235648e752a00f8ef709fbe2f3523ca4', result.output)
 
+    @unittest.skipIf(not is_module_ok('sha3'), "`sha3` plugin not enabled.")
     def test_sha3_conjecutive(self):
         runner = CliRunner()
         result = runner.invoke(oh.main, 'hashme hashme -f sha3_'.split(), catch_exceptions=False)
@@ -173,6 +187,7 @@ class TOmnihash(unittest.TestCase):
         self.assertEqual(len(re.findall('80d3abe0d26ba5f08e231bb7787b1df7c007df6d4490e52654bf8566abcea81f',
                                         result.output)), 2, 'SHA3_512' + result.output)
 
+    @unittest.skipIf(not is_module_ok('pyblake2'), "`blake2` plugin not enabled.")
     def test_blake2_conjecutive(self):
         runner = CliRunner()
         result = runner.invoke(oh.main, 'hashme hashme -f BLAKE2'.split(), catch_exceptions=False)
