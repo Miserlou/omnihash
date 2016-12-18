@@ -46,6 +46,11 @@ class FileIter(object):
 def iterate_bytechunks(hashme, is_string, use_json, hash_many):
     """
     Return iterable bytes and content-length if possible.
+
+    :param is_string:
+        if true, do not search if `hashme` is URL/file,
+        if ``False``, ``hashme`` assume to be either a URL or a file,
+        if ``None``, try URL/file or fallback to string.
     """
 
     # URL
@@ -80,6 +85,10 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
         fsize = os.stat(hashme).st_size
         bytechunks = FileIter(open(hashme, mode='rb'))
     # String
+    elif is_string is False:
+        if not use_json:
+            click.echo("No such file or directory: " + click.style(hashme, bold=True), err=not hash_many)
+        return None
     else:
         if not use_json:
             click.echo("Hashing string " + click.style(hashme, bold=True) + "..", err=not hash_many)

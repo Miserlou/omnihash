@@ -61,7 +61,7 @@ setup(
     entry_points={
         'console_scripts': [
             'omnihash = omnihash.__main__:main',
-            'oh = omnihash.__main__:main',
+            'oh = omnihash.__main__:main_fallback_to_str',
         ],
         'omnihash.plugins': [
             'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',

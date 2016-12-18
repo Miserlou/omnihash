@@ -43,33 +43,33 @@ class TOmnihash(unittest.TestCase):
     # Main
     def test_empty(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, catch_exceptions=False)
         #print(result.output)
         self.assertEqual(result.exit_code, 0)
 
     def test_omnihash(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme'], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme'], catch_exceptions=False)
         #print(result.output)
         self.assertEqual(result.exit_code, 0)
         self.assertIn('fb78992e561929a6967d5328f49413fa99048d06', result.output)
 
     def test_omnihash2(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme', 'asdf'], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'asdf'], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertIn('fb78992e561929a6967d5328f49413fa99048d06', result.output)
 
     def test_omnihashfile(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme', 'LICENSE'], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'LICENSE'], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('941c986ff0f3e90543dc5e2a0687ee99b19bff67', result.output)
 
     def test_omnihashfile_conjecutive(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, 'LICENSE LICENSE -f sha1'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'LICENSE LICENSE -f sha1'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         matches = re.findall('941c986ff0f3e90543dc5e2a0687ee99b19bff67', result.output)
@@ -81,7 +81,7 @@ class TOmnihash(unittest.TestCase):
 
         fpath = 'LICENSE'
         text = 'hashme'
-        result = runner.invoke(oh.main, [text, fpath], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, [text, fpath], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertRegex(result.output, r'LENGTH: +%i\D' % len(text))
         filelen = os.stat(fpath).st_size
@@ -91,13 +91,13 @@ class TOmnihash(unittest.TestCase):
     def test_omnihashfile_length_zero(self):
         runner = CliRunner()
 
-        result = runner.invoke(oh.main, [''], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, [''], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertRegex(result.output, r'LENGTH: +0\D')
 
     def test_omnihashf(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, 'Hi -f sha2 -f SHA5'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'Hi -f sha2 -f SHA5'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         out = """
   SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
@@ -107,7 +107,7 @@ class TOmnihash(unittest.TestCase):
 """
         self.assertIn(out, result.output)
 
-        result = runner.invoke(oh.main, 'Hi -f sha2 -f ITU'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'Hi -f sha2 -f ITU'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         out = """
   SHA224:                7d5104ff2cee331a4586337ea64ab6a188e2b26aecae87227105dae1
@@ -120,13 +120,13 @@ class TOmnihash(unittest.TestCase):
 
     def test_omnihashs(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme', 'LICENSE', '-s'], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'LICENSE', '-s'], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertIn('0398ccd0f49298b10a3d76a47800d2ebecd49859', result.output)
 
     def test_omnihashcrc(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme', 'README.md', '-s'], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'README.md', '-s'], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('fb78992e561929a6967d5328f49413fa99048d06', result.output)
@@ -135,7 +135,7 @@ class TOmnihash(unittest.TestCase):
 
     def test_url(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ['hashme',
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme',
                                          'https://www.google.com/images/branding/googlelogo/'
                                          '2x/googlelogo_color_272x92dp.png'],
                                catch_exceptions=False)
@@ -145,7 +145,7 @@ class TOmnihash(unittest.TestCase):
         if is_module_ok('crcmod'):
             self.assertIn('809089', result.output)
 
-        result = runner.invoke(oh.main, ['hashme', 'https://www.google.com/images/branding/googlelogo/'
+        result = runner.invoke(oh.main_fallback_to_str, ['hashme', 'https://www.google.com/images/branding/googlelogo/'
                                          '2x/googlelogo_color_272x92dp.png', '-s'],
                                catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
@@ -156,14 +156,14 @@ class TOmnihash(unittest.TestCase):
 
     def test_json(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, ["correct horse battery staple", "-j", "-m", "9cC2"], catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, ["correct horse battery staple", "-j", "-m", "9cC2"], catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('"MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"', result.output)
 
     def test_omnihashfile_git(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, 'LICENSE -f git'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'LICENSE -f git'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         #print(result.output)
         self.assertIn('3e108735fcf3efac2b181874a34861a9fb5e7cc1', result.output)
@@ -173,7 +173,7 @@ class TOmnihash(unittest.TestCase):
     @unittest.skipIf(not is_module_ok('sha3'), "`sha3` plugin not enabled.")
     def test_sha3_conjecutive(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, 'hashme hashme -f sha3_'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'hashme hashme -f sha3_'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         if 'SHA3_' not in result.output:
             return  # SHA3 not installed.
@@ -190,7 +190,7 @@ class TOmnihash(unittest.TestCase):
     @unittest.skipIf(not is_module_ok('pyblake2'), "`blake2` plugin not enabled.")
     def test_blake2_conjecutive(self):
         runner = CliRunner()
-        result = runner.invoke(oh.main, 'hashme hashme -f BLAKE2'.split(), catch_exceptions=False)
+        result = runner.invoke(oh.main_fallback_to_str, 'hashme hashme -f BLAKE2'.split(), catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         if 'BLAKE2' not in result.output:
             return  # BLAKE2 not installed.
