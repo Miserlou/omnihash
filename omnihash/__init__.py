@@ -67,11 +67,7 @@ def iterate_bytechunks(hashme, is_string, use_json, hash_many):
             raise ValueError("Failed reading URL due to: {}".format(e))
         if response.status_code != 200:
             click.echo("Response returned %s. :(" % response.status_code, err=True)
-        try:
-            fsize = int(response.headers.get('Content-Length'))
-        except Exception as ex:
-            click.echo("[Could not get response-size due to: %s" % ex, err=True)
-            fsize = None
+        fsize = None
         bytechunks = response.iter_content()
     # File
     elif not is_string and os.path.exists(hashme):
