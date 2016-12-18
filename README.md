@@ -218,7 +218,7 @@ to install "extra" digesters depending on those external libraries:
 
 You may install the dependencies required for these plugins using a command like this:
 
-    pip install omnihash[sha3,pyblake2,crc]
+    pip install omnihash[sha3,blake2,crc]
 
 ### License
 

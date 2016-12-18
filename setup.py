@@ -65,13 +65,13 @@ setup(
         ],
         'omnihash.plugins': [
             'a_sha3 = omnihash.plugin:plugin_sha3_digesters [sha3]',
-            'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [pyblake2]',
+            'b_pyblake2 = omnihash.plugin:plugin_pyblake2_digesters [blake2]',
             'c_crc = omnihash.plugin:plugin_crc_digesters [crc]',
         ],
     },
     extras_require={
         'sha3': ['sha3'],
-        'pyblake2': ['pyblake2'],
+        'blake2': ['pyblake2'],
         'crc': ['crcmod'],
     },
     classifiers=[
