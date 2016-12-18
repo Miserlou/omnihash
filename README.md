@@ -145,6 +145,12 @@ You can output in machine readable JSON with `-j`, like so:
         "MD5": "9cc2ae8a1ba7a93da39b46fc1019c481"
     }
 
+You can view all available algorithms with `-l` option:
+
+    omnihash -l
+    LENGTH, DSA, DSA-SHA, MD4, MD5, RIPEMD160, ...
+
+The list may be different for each installation, due to "plugins" (read section below).
 
 More information can be found with `--help`.
 

@@ -43,7 +43,8 @@ class FileIter(object):
 @click.option('--match', '-m', is_flag=False, default=False, help="Match input string.")
 @click.option('--json', '-j', is_flag=True, default=False, help="Output result in JSON format.")
 @click.pass_context
-def main(click_context, file_or_url, version, as_str, family, x_family, match, json):
+@click.option('--list-algos', '-l', is_flag=True, default=False, help="List available algos.")
+def main(click_context, file_or_url, version, as_str, family, x_family, match, json, list_algos):
     """
     Read HASHME file/URL and omni-hash it. Read <stdin> if no args given.
     """
@@ -53,10 +54,13 @@ def main(click_context, file_or_url, version, as_str, family, x_family, match, j
         click.echo(version)
         return
 
-    match = match and match.lower()
     digfacts = omnihash.collect_digester_factories(family, x_family)
+    if list_algos:
+        click.echo(', '.join(digfacts))
+        return
 
     results = []
+    match = match and match.lower()
     if not file_or_url:
         stdin = click.get_binary_stream('stdin')
         bytechunks = iter(lambda: stdin.read(io.DEFAULT_BUFFER_SIZE), b'')
@@ -76,7 +80,7 @@ def main(click_context, file_or_url, version, as_str, family, x_family, match, j
     if results and json:
         import json
 
-        print(json.dumps(results, indent=4, sort_keys=True))
+        click.echo(json.dumps(results, indent=4, sort_keys=True))
 
 
 @click.command()
@@ -92,23 +96,26 @@ def main(click_context, file_or_url, version, as_str, family, x_family, match, j
                     "Use it multiple times to exclude more families."))
 @click.option('--match', '-m', is_flag=False, default=False, help="Match input string.")
 @click.option('--json', '-j', is_flag=True, default=False, help="Output result in JSON format.")
+@click.option('--list-algos', '-l', is_flag=True, default=False, help="List available algos.")
 @click.pass_context
-def main_fallback_to_str(click_context, hashme, version, as_str, family, x_family, match, json):
+def main_fallback_to_str(click_context, hashme, version, as_str, family, x_family, match, json, list_algos):
     """
     If HASHME is an existent file or a URL, read and omni-hash it.
     Otherwise, omni-hash HASHME as a string.  Read <stdin> if no args given.
     """
 
-    # Print version and quit
     if version:
         version = pkg_resources.require("omnihash")[0].version
         click.echo(version)
         return
 
-    match = match and match.lower()
     digfacts = omnihash.collect_digester_factories(family, x_family)
+    if list_algos:
+        click.echo(', '.join(digfacts))
+        return
 
     results = []
+    match = match and match.lower()
     if not hashme:
         # If no stdin, just help and quit.
         if not sys.stdin.isatty():
@@ -135,7 +142,7 @@ def main_fallback_to_str(click_context, hashme, version, as_str, family, x_famil
     if results and json:
         import json
 
-        print(json.dumps(results, indent=4, sort_keys=True))
+        click.echo(json.dumps(results, indent=4, sort_keys=True))
 
 
 ##
